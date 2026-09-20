@@ -1,0 +1,99 @@
+/* ===== أساسيات ===== */
+:root { color-scheme: light; }
+html { -webkit-text-size-adjust: 100%; }
+body { font-family: system-ui, "Segoe UI", Tahoma, sans-serif; }
+
+/* ===== حقول النماذج ===== */
+.lbl {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.3rem;
+}
+.inp {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.9rem;
+  background: #fff;
+  outline: none;
+  color: #1e293b;
+  transition: border-color .15s, box-shadow .15s;
+}
+.inp:focus {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, .12);
+}
+
+/* ===== أزرار ===== */
+.btn-primary {
+  background: #0f766e;
+  color: #fff;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  transition: background .15s;
+}
+.btn-primary:hover { background: #115e59; }
+.btn-secondary {
+  background: #f0fdfa;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  transition: background .15s;
+}
+.btn-secondary:hover { background: #ccfbf1; }
+.btn-danger {
+  background: #dc2626;
+  color: #fff;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  transition: background .15s;
+}
+.btn-danger:hover { background: #b91c1c; }
+button:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ===== حركات ===== */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: none; }
+}
+.toast { animation: toast-in .18s ease-out; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 3px solid #ccfbf1;
+  border-top-color: #0f766e;
+  border-radius: 9999px;
+  animation: spin .8s linear infinite;
+  margin: auto;
+}
+
+/* ===== شريط التنقل السفلي ===== */
+.bottom-nav { padding-bottom: env(safe-area-inset-bottom); }
+
+/* ===== الطباعة: بطاقة QR فقط ===== */
+@media print {
+  body * { visibility: hidden !important; }
+  #qr-card, #qr-card * { visibility: visible !important; }
+  #qr-card {
+    position: fixed;
+    top: 0; right: 0; left: 0;
+    margin: 0 auto;
+    width: 92%;
+    max-width: 480px;
+    box-shadow: none !important;
+    border: 1px solid #94a3b8;
+  }
+  header, nav, .no-print { display: none !important; }
+}

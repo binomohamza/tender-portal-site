@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>تحميل دفتر الشروط</title>
+  <meta name="robots" content="noindex">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4', 400: '#2dd4bf',
+              500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a'
+            }
+          },
+          fontFamily: { sans: ['system-ui', 'Segoe UI', 'Tahoma', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800">
+
+  <!-- صفحة المتعامل فقط — لا توجد أي واجهة إدارية هنا -->
+  <div id="public-root" class="max-w-lg mx-auto px-4 py-8"></div>
+  <footer class="text-center text-[11px] text-slate-400 pb-6">بوابة مكتب الصفقات الجامعية</footer>
+
+  <div id="toasts" class="fixed top-4 inset-x-0 z-[60] flex flex-col items-center gap-2 px-4 pointer-events-none"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/download.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
