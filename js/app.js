@@ -5,9 +5,9 @@
   function neutral(inner) {
     return (
       '<div class="text-center">' +
-      '<div class="text-4xl mb-3">🏛️</div>' +
-      '<h1 class="text-lg font-black text-slate-800">بوابة مكتب الصفقات</h1>' +
-      '<p class="text-xs text-slate-400 mb-6">تحميل دفتر الشروط</p>' +
+      '<img src="img/logo.png" alt="" class="mx-auto h-16 w-16 object-contain mb-2">' +
+      '<h1 class="text-lg font-black text-slate-800 leading-snug">جامعة عين تموشنت بلحاج بوشعيب</h1>' +
+      '<p class="text-xs text-slate-400 mb-6">مكتب الصفقات — تحميل دفتر الشروط</p>' +
       '<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-right">' + inner + '</div>' +
       '</div>'
     );

@@ -11,7 +11,7 @@
 
   const $ = (id) => document.getElementById(id);
   const val = (id) => ($(id) ? $(id).value : '');
-  const root = () => $('download-root');
+  const root = () => $('download-root') || $('public-root');
 
   D.init = async function (t) {
     token = t;
