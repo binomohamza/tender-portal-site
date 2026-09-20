@@ -1,6 +1,7 @@
 /* ===== صفحة المتعامل (?open=UUID) — عبر دالة خادم Supabase ===== */
 (function () {
   const D = (window.DownloadPage = {});
+  const kindName = (k) => (k === 'tender' ? 'طلب عروض' : 'استشارة');
 
   let token = null;
   let tender = null;
@@ -91,7 +92,7 @@
     root().innerHTML = shell(
       '<div class="mb-5">' +
       '<div class="flex items-center justify-between gap-2 mb-1">' +
-      '<span class="font-black text-slate-800">استشارة عدد: ' + esc(tender.reference) + '</span>' +
+      '<span class="font-black text-slate-800">' + kindName(tender.kind) + ' عدد: ' + esc(tender.reference) + '</span>' +
       '<span class="text-xs font-bold text-teal-700 bg-teal-50 border border-teal-200 rounded-full px-2 py-0.5">منشورة</span>' +
       '</div>' +
       '<p class="text-sm text-slate-600">' + esc(tender.title) + '</p>' +

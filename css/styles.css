@@ -97,3 +97,26 @@ button:disabled { opacity: .6; cursor: not-allowed; }
   }
   header, nav, .no-print { display: none !important; }
 }
+
+/* ===== أزرار اختيار النوع (استشارة / طلب عروض) ===== */
+.kind-opt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.75rem;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  background: #fff;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.kind-opt:hover { border-color: #99f6e4; }
+.kind-opt:has(input:checked) {
+  border-color: #0f766e;
+  background: #f0fdfa;
+  color: #0f766e;
+}
