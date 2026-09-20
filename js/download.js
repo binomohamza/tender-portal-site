@@ -4,8 +4,7 @@
 
   let token = null;
   let tender = null;
-  let signed = { expiresAt: 0 };
-  let cachedBlob = null;
+  let signed = { url: '', expiresAt: 0 };
   let lastInfo = null;
   let expiryTimer = null;
 
@@ -16,7 +15,6 @@
   D.init = async function (t) {
     token = t;
     tender = null;
-    cachedBlob = null;
     lastInfo = null;
     renderLoading();
     try {
@@ -183,20 +181,16 @@
       }
       throw new Error('تعذر تجهيز رابط التحميل');
     }
-    signed = { url: data.url, expiresAt: Date.now() + (data.expires_in || 600) * 1000 };
-
-    const res = await fetch(signed.url);
-    if (!res.ok) throw new Error('تعذر جلب الملف (' + res.status + ')');
-    return new Blob([await res.arrayBuffer()], { type: 'application/pdf' });
+    return { url: data.url, expiresAt: Date.now() + (data.expires_in || 600) * 1000 };
   }
 
   async function startDownload(info) {
     lastInfo = info;
     renderWorking('جارٍ تسجيل بياناتك وتجهيز الملف...');
     try {
-      cachedBlob = await fetchViaFunction(info);
-      const filename = 'دفتر-الشروط_' + tender.reference + '.pdf';
-      downloadBlob(cachedBlob, filename);
+      signed = await fetchViaFunction(info);
+      // التنزيل المباشر من الرابط المؤقت (يدعم الملفات الكبيرة)
+      window.location.href = signed.url;
       renderDone();
     } catch (err) {
       console.error(err);
@@ -207,14 +201,14 @@
   D.redownload = async function () {
     if (!tender || !lastInfo) return;
     try {
-      if (cachedBlob && Date.now() < signed.expiresAt - 30000) {
-        downloadBlob(cachedBlob, 'دفتر-الشروط_' + tender.reference + '.pdf');
-        toast('تم تحميل النسخة المحفوظة', 'success', 2500);
+      if (signed.url && Date.now() < signed.expiresAt - 30000) {
+        window.location.href = signed.url;
+        toast('جارٍ التنزيل (الرابط ما زال صالحًا)', 'success', 2500);
         return;
       }
       renderWorking('جارٍ توليد رابط جديد...');
-      cachedBlob = await fetchViaFunction(lastInfo);
-      downloadBlob(cachedBlob, 'دفتر-الشروط_' + tender.reference + '.pdf');
+      signed = await fetchViaFunction(lastInfo);
+      window.location.href = signed.url;
       renderDone();
     } catch (err) {
       console.error(err);
