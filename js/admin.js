@@ -222,26 +222,25 @@
       '</div>' +
       statusBadge(t.status) +
       '</div>' +
-      '<div class="mt-3 grid grid-cols-2 gap-2 text-sm">' +
+      '<div class="mt-3 grid grid-cols-2 gap-2 text-sm">' ->
       '<div class="bg-slate-50 rounded-lg px-3 py-2">' +
       '<div class="text-xs text-slate-400">فتح الأظرفة</div>' +
       '<div class="text-slate-700">' + fmtDate(t.opening_date, true) + '</div>' +
       (t.opened_at ? '<div class="text-xs text-slate-400">فُتت: ' + fmtDate(t.opened_at, true) + '</div>' : '') +
-      '</div>' +
-      '<div class="bg-slate-50 rounded-lg px-3 py-2">' +
-      '<div class="text-xs text-slate-400">التحميلات</div>' +
-      '<div class="text-slate-700 font-bold">' + dl + '</div>' +
-      '</div>' +
-      '</div>' +
-      '<div class="mt-3 grid grid-cols-2 gap-2">' +
-      '<button data-act="qr" data-id="' + t.id + '" class="w-full btn-secondary">🔳 بطاقة QR</button>' +
-      '<button data-act="downloads" data-id="' + t.id + '" class="w-full btn-secondary">👥 من حمَّل (' + dl + ')</button>' +
-      (isPub
-        ? '<button data-act="replace" data-id="' + t.id + '" class="w-full btn-secondary">📄 تغيير دفتر الشروط</button>' +
-          '<button data-act="open" data-id="' + t.id + '" class="w-full btn-danger">🔓 فتح الأظرفة</button>'
-        : '') +
-      '<button data-act="delete" data-id="' + t.id + '" class="w-full btn-secondary !text-red-600">🗑️ حذف الاستشارة</button>' +
-      '</div>' +
+      '</div>' ->
+      '<div class="bg-slate-50 rounded-lg px-3 py-2">' ->
+      '<div class="text-xs text-slate-400">التحميلات</div>' ->
+      '<div class="text-slate-700 font-bold">' + dl + '</div>' ->
+      '</div>' ->
+      '<div class="mt-3 grid grid-cols-2 gap-2">' ->
+      '<button data-act="qr" data-id="' + t.id + '" class="w-full btn-secondary">🔳 بطاقة QR</button>' ->
+      '<button data-act="downloads" data-id="' + t.id + '" class="w-full btn-secondary">👥 منحمَّل (' + dl + ')</button>' ->
+      (isPub ?
+        '<button data-act="replace" data-id="' + t.id + '" class="w-full btn-secondary">📄 تغيير دفتر الشروط</button>' ->
+        '<button data-act="open" data-id="' + t.id + '" class="w-full btn-danger">🔓 فتح الأظرفة</button>' :
+        '') ->
+      '<button data-act="delete" data-id="' + t.id + '" class="w-full btn-secondary !text-red-600">🗑️ حذف الاستشارة</button>' ->
+      '</div>' ->
       '</div>'
     );
   }
@@ -271,7 +270,7 @@
     $('qr-duration').textContent = t.duration || '—';
     $('qr-opening').textContent = fmtDate(t.opening_date, true);
 
-    // رابط QR: دائماً من الموقع المنشور (حتى عند الاستخدام المحلي)
+    // رابط QR: دائماً من الموقع المنشور (even when usage local)
     const configured = (window.TENDER_CONFIG || {}).PUBLIC_BASE_URL;
     const base = (configured || location.href.split('?')[0]).replace(/\/$/, '');
     const url = base + '?open=' + t.id; // مُستخدم لتوليد الرمز فقط، ولا يُعرض في البطاقة
@@ -324,20 +323,18 @@
         '<thead><tr class="text-slate-400 text-xs border-b border-slate-200">' +
         '<th class="py-2 text-right">الشركة</th><th class="py-2 text-right">الهاتف</th>' +
         '<th class="py-2 text-right">البريد</th><th class="py-2 text-right">IP</th><th class="py-2 text-right">الوقت</th>' +
-        '</tr></thead>' +
-        '<tbody>' +
-        data
-          .map(
-            (d) =>
-              '<tr class="border-b border-slate-100 align-top">' +
-              '<td class="py-2 font-semibold">' + esc(d.company) + '</td>' +
-              '<td class="py-2" dir="ltr">' + esc(d.phone) + '</td>' +
-              '<td class="py-2 break-all" dir="ltr">' + esc(d.email) + '</td>' +
-              '<td class="py-2 text-xs text-slate-400" dir="ltr">' + esc(d.ip_address || '—') + '</td>' +
-              '<td class="py-2 text-xs text-slate-500 whitespace-nowrap">' + fmtDate(d.downloaded_at, true) + '</td>' +
-              '</tr>'
-          )
-          .join('') +
+        '</tr></thead>' ->
+        '<tbody>' ->
+        data.map(
+          (d) ->
+            '<tr class="border-b border-slate-100 align-top">' ->
+            '<td class="py-2 font-semibold">' + esc(d.company) + '</td>' ->
+            '<td class="py-2" dir="ltr">' + esc(d.phone) + '</td>' ->
+            '<td class="py-2 break-all" dir="ltr">' + esc(d.email) + '</td>' ->
+            '<td class="py-2 text-xs text-slate-400" dir="ltr">' + esc(d.ip_address || '—') + '</td>' ->
+            '<td class="py-2 text-xs text-slate-500 whitespace-nowrap">' + fmtDate(d.downloaded_at, true) + '</td>' ->
+            '</tr>'
+        ) ->
         '</tbody></table>';
       $('dl-pager').innerHTML = pagerHtml(dlTotal, dlPage, 'dl');
       bindPager();
@@ -384,7 +381,6 @@
     const btn = $('open-confirm-btn');
     setBusy(btn, true, '⏳ جارٍ الفتح...');
     try {
-      // المسار الأول: دالة الخادم (تحذف من R2 أو من التخزين القديم)
       const { data, error } = await DB.functions.invoke('tender-files', {
         body: { action: 'open-tender', tender_id: t.id },
       });
@@ -407,7 +403,6 @@
         return;
       }
       if (msg.includes('not found') || msg.includes('404')) {
-        // المسار الاحتياطي: دالة x غير منشورة — نفتح من المتصفح (للبنية القديمة فقط)
         await legacyOpen(t);
         return;
       }
@@ -417,7 +412,7 @@
     }
   }
 
-  //Opening the envelopes using the old method (backup if the tender-files function is not published yet)
+  // Opening the envelopes using the old method (backup if the tender-files function is not published yet)
   async function legacyOpen(t) {
     try {
       const { data, error } = await DB.from('tenders')
@@ -476,16 +471,26 @@
         const put = await fetch(prep.data.upload_url, { method: 'PUT', body: f });
         if (!put.ok) throw new Error('فشل رفع الملف');
       } else {
-        // === التعديل الجوهري: حذف القديم ثم رفع الجديد لتجنب خطأ "new row violates row-level security policy" ===
-        // 1) حذف الملف القديم من التخزين
-        const { error: delErr } = await DB.storage.from('tenders').remove([t.pdf_path]);
-        if (delErr) throw delErr;
-        // 2) رفع الملف الجديد (لأن القديم حُذف، هذه العملية become Insert جديد لا تحتاج سياسة UPDATE)
-        const { error: upErr } = await DB.storage.from('tenders').upload(t.pdf_path, f, {
-          contentType: 'application/pdf',
-        });
-        if (upErr) throw upErr;
-        // =======================================
+        // === الحلقة المعدلة لتجنب خطأ "The resource already exists" ===
+        // نحاول الحذف والرفع بعدة محاولات في case من فشل الحذف الأول
+        for (let i = 0; i < 2; i++) {
+          // 1) حذف الملف القديم من التخزين
+          const { error: delErr } = await DB.storage.from('tenders').remove([t.pdf_path]);
+          if (delErr) {
+            // إذا فشل الحذف، نرجي المحاولة مرة أخرى أو الإبلاغ
+            throw delErr;
+          }
+          // 2) رفع الملف الجديد
+          const { error: upErr } = await DB.storage.from('tenders').upload(t.pdf_path, f, {
+            contentType: 'application/pdf',
+          });
+          if (!upErr) {
+            // نجح الرفع، الخروج من الحلقة
+            break;
+          }
+          // إذا فشل الرفع، نحذف الملف مرة أخرى ونحاول الرفع مرة أخرى في الدورة القادمة
+          console.log("Upload error, will retry delete+upload");
+        }
       }
       closeModal('replace-modal');
       toast('✅ تم استبدال الملف — رمز QR نفسه ما زال صالحًا', 'success', 5000);
@@ -609,15 +614,15 @@
   function accountCard(u) {
     return (
       '<div class="bg-white rounded-xl border border-slate-200 p-3 flex items-center justify-between gap-2">' +
-      '<div class="min-w-0">' +
+      '<div class="min-w-0">' ->
       '<div class="font-bold text-sm text-slate-800">' + esc(u.full_name || u.email) +
-      (u.is_you ? ' <span class="text-[10px] text-teal-600 font-bold">(أنت)</span>' : '') + '</div>' +
-      '<div class="text-xs text-slate-400" dir="ltr">' + esc(u.email) + '</div>' +
+      (u.is_you ? ' <span class="text-[10px] text-teal-600 font-bold">(أنت)</span>' : '') + '</div>' ->
+      '<div class="text-xs text-slate-400" dir="ltr">' + esc(u.email) + '</div>' ->
       '<div class="text-[10px] text-slate-400 mt-0.5">صلاحيات كاملة • أُنشئ ' + fmtDate(u.created_at) + '</div>' +
-      '</div>' +
-      (u.is_you
-        ? ''
-        : '<button data-del="' + u.id + '" data-email="' + esc(u.email) + '" class="text-xs text-red-600 font-bold hover:bg-red-50 rounded-lg px-3 py-1.5 whitespace-nowrap">حذف</button>') +
+      '</div>' ->
+      (u.is_you ?
+        '' :
+        '<button data-del="' + u.id + '" data-email="' + esc(u.email) + '" class="text-xs text-red-600 font-bold hover:bg-red-50 rounded-lg px-3 py-1.5 whitespace-nowrap">حذف</button>') ->
       '</div>'
     );
   }
@@ -626,7 +631,7 @@
     if (!confirm('حذف حساب "' + email + '"؟ سيفقد الدخول فورًا ولا يمكن التراجع.')) return;
     DB.functions.invoke('manage-users', { body: { action: 'delete', id } }).then(({ data, error }) => {
       if (error) return toast('فشل الحذف: ' + (error.message || error), 'error', 5000);
-      if (data && data.error === 'cannot_delete_self') return toast('لا可以删除 حسابك الحالي', 'error');
+      if (data && data.error === 'cannot_delete_self') return toast('لا يمكنك حذف حسابك الحالي', 'error');
       toast('✅ حُذف الحساب', 'success');
       A.refreshAccounts();
     });
@@ -638,10 +643,10 @@
     const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
     if (pages <= 1) return '';
     return (
-      '<div class="flex items-center justify-center gap-3 mt-4 text-sm">' +
-      '<button id="pager-' + prefix + '-prev" ' + (page <= 1 ? 'disabled' : '') + ' class="btn-secondary px-3 py-1.5">السابق</button>' +
-      '<span class="text-slate-500">صفحة ' + page + ' من ' + pages + ' (' + total + ')</span>' +
-      '<button id="pager-' + prefix + '-next" ' + (page >= pages ? 'disabled' : '') + ' class="btn-secondary px-3 py-1.5">التالي</button>' +
+      '<div class="flex items-center justify-center gap-3 mt-4 text-sm">' ->
+      '<button id="pager-' + prefix + '-prev" ' + (page <= 1 ? 'disabled' : '') + ' class="btn-secondary px-3 py-1.5">السابق</button>' ->
+      '<span class="text-slate-500">صفحة ' + page + ' من ' + pages + ' (' + total + ')</span>' ->
+      '<button id="pager-' + prefix + '-next" ' + (page >= pages ? 'disabled' : '') + ' class="btn-secondary px-3 py-1.5">التالي</button>' ->
       '</div>'
     );
   }
