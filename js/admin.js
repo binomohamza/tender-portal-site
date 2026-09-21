@@ -451,7 +451,7 @@
     openModal('replace-modal');
   }
 
-    async function confirmReplace() {
+      async function confirmReplace() {
     const t = replaceTender;
     if (!t) return;
     const f = $('replace-file').files[0];
@@ -471,27 +471,28 @@
         const put = await fetch(prep.data.upload_url, { method: 'PUT', body: f });
         if (!put.ok) throw new Error('فشل رفع الملف');
       } else {
-        // === الحلقة المعدلة لتجنب خطأ "The resource already exists" ===
-        // نحاول الحذف والرفع بعدة محاولات (2 محاولات) لضمان النجاح
-        for (let i = 0; i < 2; i++) {
-          // 1) حذف الملف القديم من التخزين
+        // === حلقة قوية لتجنب أي خطأ "The resource already exists" ===
+        // نحاول 3 مرات لضمان النجاح حتى إذا كان هناك ملف متبقي
+        for (let i = 0; i < 3; i++) {
+          // 1) محاولة حذف الملف القديم
           const { error: delErr } = await DB.storage.from('tenders').remove([t.pdf_path]);
-          // إذا فشل الحذف، نرجي المحاولة مرة أخرى في الدورة القادمة
-          if (delErr) {
-            console.log("فشل في الحذف، سيتم المحاولة مرة أخرى...");
-            // لا نرفع هنا، ننتظار الدورة التالية
-            continue; 
-          }
-          // 2) رفع الملف الجديد (لأن القديم حُذف، هذه العملية become Insert جديد)
-          const { error: upErr } = await DB.storage.from('tenders').upload(t.pdf_path, f, {
-            contentType: 'application/pdf',
-          });
-          if (!upErr) {
-            // نجح الرفع، الخروج من الحلقة فوراً
-            break; 
+          // إذا نجح الحذف، نكمل رفع الجديد
+          if (!delErr) {
+            // 2) رفع الملف الجديد (بما أن القديم حُذف، العملية تصبح Insert جديد)
+            const { error: upErr } = await DB.storage.from('tenders').upload(t.pdf_path, f, {
+              contentType: 'application/pdf',
+            });
+            if (!upErr) {
+              // éxito en la carga, salir del bucle
+              break; 
+            } else {
+              console.log("Error en el upload, reintentando...");
+              continue; // Si falla el upload, intentamos de nuevo el bucle
+            }
           } else {
-            console.log("فشل في الرفع، will retry delete+upload");
-            // إذا فشل الرفع، نكمل الدورة لمحاولة حذف القديم مرة أخرى ورفع جديد
+            // Si falló el delete, esperar un momento e intentar nuevamente
+            await new Promise(r => setTimeout(r, 500)); // Esperar 0.5 ثانية
+            continue; // reintentar el bucle
           }
         }
         // =======================================
