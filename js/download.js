@@ -5,7 +5,7 @@
 
   let token = null;
   let tender = null;
-  let signed = { url: '', expiresAt: 0 };
+  let signed = { url: '', expiresAt: 0, updated: false };
   let lastInfo = null;
   let expiryTimer = null;
 
@@ -126,7 +126,11 @@
       '<div class="text-center py-4">' +
       '<div class="text-5xl mb-3">✅</div>' +
       '<h2 class="font-black text-slate-800 mb-1">تم التحميل بنجاح</h2>' +
-      '<p class="text-sm text-slate-500 mb-4">سُجِّلت بيانات <b>' + esc(lastInfo.company) + '</b> في سجل التحميلات.</p>' +
+      '<p class="text-sm text-slate-500 mb-4">' +
+      (signed.updated
+        ? 'تم تحديث سجل <b>' + esc(lastInfo.company) + '</b> (كانت لديكم عملية تحميل سابقة — لم يكرر السجل).'
+        : 'سُجِّلت بيانات <b>' + esc(lastInfo.company) + '</b> في سجل التحميلات.') +
+      '</p>' +
       '<div class="bg-slate-50 rounded-xl p-3 mb-4">' +
       '<div class="text-xs text-slate-400 mb-1">صلاحية الرابط المؤقت تنتهي خلال</div>' +
       '<div id="expiry-cd" class="text-xl font-black text-teal-700 tabular-nums"></div>' +
@@ -182,7 +186,7 @@
       }
       throw new Error('تعذر تجهيز رابط التحميل');
     }
-    return { url: data.url, expiresAt: Date.now() + (data.expires_in || 600) * 1000 };
+    return { url: data.url, expiresAt: Date.now() + (data.expires_in || 600) * 1000, updated: !!data.updated };
   }
 
   async function startDownload(info) {
