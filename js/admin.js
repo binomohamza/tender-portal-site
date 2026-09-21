@@ -147,7 +147,7 @@
         if (msg.includes('duplicate')) {
           toast('⚠️ رقم الاستشارة مستخدم بالفعل — اختر رقمًا آخر', 'error', 5000);
         } else if (msg.includes('R2') || msg.includes('r2') || msg.includes('not found') || msg.includes('Cloudflare')) {
-          toast('خدمة رفع الملفات غير جاهزة — أكمل إعداد R2 ثم أعد المحاولة', 'error', 7000);
+          toast('خدمة رفع الملفات غير جاهزة — أكمِل إعداد R2 ثم أعد المحاولة', 'error', 7000);
         } else {
           toast('فشل: ' + msg, 'error', 6000);
         }
@@ -226,7 +226,7 @@
       '<div class="bg-slate-50 rounded-lg px-3 py-2">' +
       '<div class="text-xs text-slate-400">فتح الأظرفة</div>' +
       '<div class="text-slate-700">' + fmtDate(t.opening_date, true) + '</div>' +
-      (t.opened_at ? '<div class="text-xs text-slate-400">فُتحت: ' + fmtDate(t.opened_at, true) + '</div>' : '') +
+      (t.opened_at ? '<div class="text-xs text-slate-400">فُتت: ' + fmtDate(t.opened_at, true) + '</div>' : '') +
       '</div>' +
       '<div class="bg-slate-50 rounded-lg px-3 py-2">' +
       '<div class="text-xs text-slate-400">التحميلات</div>' +
@@ -235,7 +235,7 @@
       '</div>' +
       '<div class="mt-3 grid grid-cols-2 gap-2">' +
       '<button data-act="qr" data-id="' + t.id + '" class="w-full btn-secondary">🔳 بطاقة QR</button>' +
-      '<button data-act="downloads" data-id="' + t.id + '" class="w-full btn-secondary">👥 من حمّل (' + dl + ')</button>' +
+      '<button data-act="downloads" data-id="' + t.id + '" class="w-full btn-secondary">👥 من حمَّل (' + dl + ')</button>' +
       (isPub
         ? '<button data-act="replace" data-id="' + t.id + '" class="w-full btn-secondary">📄 تغيير دفتر الشروط</button>' +
           '<button data-act="open" data-id="' + t.id + '" class="w-full btn-danger">🔓 فتح الأظرفة</button>'
@@ -271,7 +271,7 @@
     $('qr-duration').textContent = t.duration || '—';
     $('qr-opening').textContent = fmtDate(t.opening_date, true);
 
-    // رابط QR: always from published site (even when running locally)
+    // رابط QR: دائماً من الموقع المنشور (حتى عند الاستخدام المحلي)
     const configured = (window.TENDER_CONFIG || {}).PUBLIC_BASE_URL;
     const base = (configured || location.href.split('?')[0]).replace(/\/$/, '');
     const url = base + '?open=' + t.id; // مُستخدم لتوليد الرمز فقط، ولا يُعرض في البطاقة
@@ -402,7 +402,7 @@
       console.error(err);
       const msg = String((err && err.message) || err);
       if (msg.includes('already_opened')) {
-        toast('هذه الاستشارة فُتحت مسبقًا', 'error', 5000);
+        toast('هذه الاستشارة فُتت مسبقًا', 'error', 5000);
         A.refreshTenders();
         return;
       }
@@ -417,7 +417,7 @@
     }
   }
 
-  // فتح الأظرفة بالطريقة القديمة (احتياطي إن لم تكن دالة tender-files منشورة بعد)
+  //Opening the envelopes using the old method (backup if the tender-files function is not published yet)
   async function legacyOpen(t) {
     try {
       const { data, error } = await DB.from('tenders')
@@ -429,14 +429,14 @@
       if (!data || !data.length) throw new Error('تعذر التحديث (ربما تم فتحها مسبقًا)');
 
       if (t.pdf_source === 'r2') {
-        console.warn('تنبيه: الملف على R2 — حُظرت التحميلات لكن حذف الملف يتطلب دالة tender-files');
+        console.warn('تنبيه: الملف على R2 — حُطرت التحميلات لكن حذف الملف يتطلب دالة tender-files');
       } else if (t.pdf_path) {
         const { error: delErr } = await DB.storage.from('tenders').remove([t.pdf_path]);
-        if (delErr) console.warn('تنبيه: حُدثت الحالة لكن ملف التخزين:', delErr.message || delErr);
+        if (delErr) console.warn('تنبيه: حُطرت الحالة لكن ملف التخزين:', delErr.message || delErr);
       }
 
       closeModal('open-modal');
-      toast(t.pdf_source === 'r2' ? '⚠️ فُتحت الاستشارة (التحميل موقوف) — أكمل إعداد R2 لحذف الملف' : '✅ تم فتح الأظرفة وحذف الملف نهائيًا', 'success', 6000);
+      toast(t.pdf_source === 'r2' ? '⚠️ فُتت الاستشارة (التحميل موقوف) — أكمِل إعداد R2 لحذف الملف' : '✅ تم فتح الأظرفة وحذف الملف نهائيًا', 'success', 6000);
       A.refreshTenders();
     } catch (err2) {
       console.error(err2);
@@ -476,11 +476,11 @@
         const put = await fetch(prep.data.upload_url, { method: 'PUT', body: f });
         if (!put.ok) throw new Error('فشل رفع الملف');
       } else {
-        // === تعديل حاسم: حذف الملف القديم ثم رفع الجديد لتجنب خطأ RLS ===
+        // === التعديل الجوهري: حذف القديم ثم رفع الجديد لتجنب خطأ "new row violates row-level security policy" ===
         // 1) حذف الملف القديم من التخزين
         const { error: delErr } = await DB.storage.from('tenders').remove([t.pdf_path]);
         if (delErr) throw delErr;
-        // 2) رفع الملف الجديد (بما أن القديم حُذف، العملية become Insert جديد لا يحتاج سياسة UPDATE)
+        // 2) رفع الملف الجديد (لأن القديم حُذف، هذه العملية become Insert جديد لا تحتاج سياسة UPDATE)
         const { error: upErr } = await DB.storage.from('tenders').upload(t.pdf_path, f, {
           contentType: 'application/pdf',
         });
@@ -505,7 +505,7 @@
     $('delete-tender-info').innerHTML =
       '<b>' + esc(t.reference) + '</b> — ' + esc(t.title) +
       '<br><span class="text-xs text-slate-400">' +
-      (t.status === 'published' ? 'الاستشارة منشورة — سيُحذف الملف وكل سجل التحميلات.' : 'فُتحت مسبقًا — سيُحذف كل شيء (الملف محذوف أصلًا).') +
+      (t.status === 'published' ? 'الاستشارة منشورة — سيُحذف الملف وكل سجل التحميلات.' : 'فُتت مسبقًا — سيُحذف كل شيء (الملف محذوف أصلًا).') +
       '</span>';
     $('delete-ref-input').value = '';
     openModal('delete-modal');
@@ -542,7 +542,7 @@
       console.error(err);
       toast('فشل: ' + ((err && err.message) || err), 'error', 6000);
     } finally {
-      setBusy(btn, false, '🗑️ تأكيد الحذف النهائي');
+      setBusy(btn, false, '🗑️ Confirm الحذف النهائي');
     }
   }
 
@@ -626,7 +626,7 @@
     if (!confirm('حذف حساب "' + email + '"؟ سيفقد الدخول فورًا ولا يمكن التراجع.')) return;
     DB.functions.invoke('manage-users', { body: { action: 'delete', id } }).then(({ data, error }) => {
       if (error) return toast('فشل الحذف: ' + (error.message || error), 'error', 5000);
-      if (data && data.error === 'cannot_delete_self') return toast('لا يمكن حذف حسابك الحالي', 'error');
+      if (data && data.error === 'cannot_delete_self') return toast('لا可以删除 حسابك الحالي', 'error');
       toast('✅ حُذف الحساب', 'success');
       A.refreshAccounts();
     });
