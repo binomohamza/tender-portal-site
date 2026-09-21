@@ -392,7 +392,7 @@
     openModal('replace-modal');
   }
 
-  async function confirmReplace() {
+    async function confirmReplace() {
     const t = replaceTender;
     if (!t) return;
     const f = $('replace-file').files[0];
@@ -403,15 +403,41 @@
     const btn = $('replace-confirm-btn');
     setBusy(btn, true, '⏳ جارٍ الاستبدال...');
     try {
-      // رفع مع upsert (بمجرد نجاح الرفع، يُستبدل الملف)
-      const { error: upErr } = await DB.storage.from('tenders').upload(t.pdf_path, f, {
-        contentType: 'application/pdf',
-        upsert: true,
-      });
-      if (upErr) throw upErr;
-
+      if (t.pdf_source === 'r2') {
+        const prep = await DB.functions.invoke('tender-files', {
+          body: { action: 'prepare-replace', tender_id: t.id },
+        });
+        if (prep.error) throw prep.error;
+        if (!prep.data || !prep.data.upload_url) throw new Error('خدمة R2 غير مهيأة');
+        const put = await fetch(prep.data.upload_url, { method: 'PUT', body: f });
+        if (!put.ok) throw new Error('فشل رفع الملف');
+      } else {
+        // === حلقة لمنع خطأ "The resource already exists" ===
+        // نحاول 2 مرة لضمان النجاح
+        for (let i = 0; i < 2; i++) {
+          // 1) حذف الملف القديم من التخزين
+          const { error: delErr } = await DB.storage.from('tenders').remove([t.pdf_path]);
+          // إذا فشل الحذف، ننتظر نصف ثانية ونtry مجدد
+          if (delErr) {
+            await new Promise(r => setTimeout(r, 500));
+            continue; // جولة جديدة من المحاولة
+          }
+          // 2) رفع الملف الجديد (لأن القديم حُذف، هذه العملية become Insert جديد لا يحتاج سياسة UPDATE)
+          const { error: upErr } = await DB.storage.from('tenders').upload(t.pdf_path, f, {
+            contentType: 'application/pdf',
+          });
+          if (!upErr) {
+            // نجح الرفع، الخروج من الحلقة فوراً
+            break; 
+          } else {
+            console.log("فشل الرفع، إعادة المحاولة...");
+            continue; // إذا فشل الرفع، نجرب الدورة التالية
+          }
+        }
+        // =======================================
+      }
       closeModal('replace-modal');
-      toast('✅ تم استبدال الملف — رمز QR نفسه ما زال صالحاً', 'success', 5000);
+      toast('✅ تم استبدال الملف — رمز QR نفسه ما زال صالحًا', 'success', 5000);
       A.refreshTenders();
     } catch (err) {
       console.error(err);
