@@ -107,8 +107,8 @@
       '<div><label class="lbl">البريد الإلكتروني *</label>' +
       '<input id="d-email" class="inp" type="email" dir="ltr" required placeholder="you@example.com"></div>' +
       '<button type="submit" class="btn-primary w-full mt-2">📥 تحميل دفتر الشروط</button>' +
-      '<p class="text-[11px] text-slate-400 leading-relaxed">تُسجَّل بيانات مؤسستك في سجل التحميلات. ' +
-      'رابط التحميل مؤقت وصالح لمدة 10 دقائق فقط، ويُغلق نهائيًا بعد فتح الأظرفة.</p>' +
+      // سطر التواصل في الأسفل قبل button
+      '<p class="text-[11px] text-slate-500 mt-4 text-center">يرجى التواصل مع مكتب الصفقات في جامعة عين تموشنت بلحاج بوشعيب شكرًا.</p>' +
       '</form>'
     );
     $('bidder-form').addEventListener('submit', onFormSubmit);
@@ -126,11 +126,13 @@
       '<div class="text-center py-4">' +
       '<div class="text-5xl mb-3">✅</div>' +
       '<h2 class="font-black text-slate-800 mb-1">تم التحميل بنجاح</h2>' +
-      '<p class="text-sm text-slate-500 mb-4">سُجِّلت بيانات <b>' + esc(lastInfo.company) + '</b> في سجل التحميلات.</p>' +
+      // حذف عبارة "سُجِّلت بيانات" القديمة
       '<div class="bg-slate-50 rounded-xl p-3 mb-4">' +
       '<div class="text-xs text-slate-400 mb-1">صلاحية الرابط المؤقت تنتهي خلال</div>' +
       '<div id="expiry-cd" class="text-xl font-black text-teal-700 tabular-nums"></div>' +
       '</div>' +
+      // إضافة طلب التواصل في أسفل صفحة النجاح
+      '<p class="text-[11px] text-slate-500 mt-4 text-center">يرجى التواصل مع مكتب الصفقات في جامعة عين تموشنت بلحاج بوشعيب شكرًا.</p>' +
       '<button id="redownload-btn" class="btn-secondary w-full">⬇️ إعادة التحميل</button>' +
       '</div>'
     );
@@ -156,6 +158,7 @@
     const company = val('d-company').trim();
     const phone = val('d-phone').trim();
     const email = val('d-email').trim();
+    // التحقق من ملء الحقول المطلوبة
     if (!company || !phone || !email) return toast('أكمل جميع الحقول المطلوبة', 'error');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast('البريد الإلكتروني غير صالح', 'error');
     startDownload({ company, phone, email });
