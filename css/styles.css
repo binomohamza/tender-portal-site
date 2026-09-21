@@ -120,3 +120,47 @@ button:disabled { opacity: .6; cursor: not-allowed; }
   background: #f0fdfa;
   color: #0f766e;
 }
+/* ===== ورقة QR بمقاس A4 ===== */
+.qr-sheet {
+  width: 210mm;
+  min-height: 297mm;
+  background: #fff;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 6px 28px rgba(15, 23, 42, .18);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.qr-kind-pill {
+  display: inline-block;
+  padding: 0.3rem 0.9rem;
+  border-radius: 0.55rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #fff;
+  background: #0f766e;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+#qr-sheet-scaler { transform-origin: top center; }
+
+/* ===== الطباعة: ورقة A4 كاملة ===== */
+@media print {
+  @page { size: A4; margin: 0; }
+  body * { visibility: hidden !important; }
+  #qr-card, #qr-card * { visibility: visible !important; }
+  #qr-modal { background: transparent !important; backdrop-filter: none !important; }
+  #qr-sheet-viewport { overflow: visible !important; padding: 0 !important; background: #fff !important; }
+  #qr-sheet-scaler { transform: none !important; width: auto !important; height: auto !important; margin: 0 !important; }
+  #qr-card {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+}
