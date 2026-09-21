@@ -451,7 +451,7 @@
     openModal('replace-modal');
   }
 
-      async function confirmReplace() {
+       async function confirmReplace() {
     const t = replaceTender;
     if (!t) return;
     const f = $('replace-file').files[0];
@@ -471,28 +471,26 @@
         const put = await fetch(prep.data.upload_url, { method: 'PUT', body: f });
         if (!put.ok) throw new Error('فشل رفع الملف');
       } else {
-        // === حلقة قوية لتجنب أي خطأ "The resource already exists" ===
-        // نحاول 3 مرات لضمان النجاح حتى إذا كان هناك ملف متبقي
+        // === حلقة قوية لتجاوز أي خطأ تخزين ===
+        // نحاول 3 مرات لضمان النجاح
         for (let i = 0; i < 3; i++) {
-          // 1) محاولة حذف الملف القديم
+          // 1) حذف الملف القديم
           const { error: delErr } = await DB.storage.from('tenders').remove([t.pdf_path]);
-          // إذا نجح الحذف، نكمل رفع الجديد
-          if (!delErr) {
-            // 2) رفع الملف الجديد (بما أن القديم حُذف، العملية تصبح Insert جديد)
-            const { error: upErr } = await DB.storage.from('tenders').upload(t.pdf_path, f, {
-              contentType: 'application/pdf',
-            });
-            if (!upErr) {
-              // éxito en la carga, salir del bucle
-              break; 
-            } else {
-              console.log("Error en el upload, reintentando...");
-              continue; // Si falla el upload, intentamos de nuevo el bucle
-            }
+          // إذا فشل الحذف، ننتظر نصف ثانية ونحاول مرة أخرى
+          if (delErr) {
+            await new Promise(r => setTimeout(r, 500));
+            continue;
+          }
+          // 2) رفع الملف الجديد
+          const { error: upErr } = await DB.storage.from('tenders').upload(t.pdf_path, f, {
+            contentType: 'application/pdf',
+          });
+          if (!upErr) {
+            // نجح الرفع، الخروج من الحلقة فوراً
+            break;
           } else {
-            // Si falló el delete, esperar un momento e intentar nuevamente
-            await new Promise(r => setTimeout(r, 500)); // Esperar 0.5 ثانية
-            continue; // reintentar el bucle
+            // إذا فشل الرفع، نحاول الدورة التالية (حذف وإعادة رفع)
+            continue;
           }
         }
         // =======================================
@@ -507,7 +505,6 @@
       setBusy(btn, false, '📤 استبدال الملف');
     }
   }
-
   /* ---------- حذف الاستشارة ---------- */
 
   function askDelete(t) {
