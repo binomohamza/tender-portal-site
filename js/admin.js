@@ -135,6 +135,7 @@
         window.switchTo('tab-tenders');
         A.showQR({
           id: tenderId,
+          kind,
           reference: ref.trim(),
           title: title.trim(),
           duration: duration.trim() || null,
@@ -270,11 +271,10 @@
     $('qr-duration').textContent = t.duration || '—';
     $('qr-opening').textContent = fmtDate(t.opening_date, true);
 
-    // رابط QR: دائمًا من الموقع المنشور (حتى عند الاستخدام المحلي)
+    // رابط QR: always from published site (even when running locally)
     const configured = (window.TENDER_CONFIG || {}).PUBLIC_BASE_URL;
     const base = (configured || location.href.split('?')[0]).replace(/\/$/, '');
-    const url = base + '?open=' + t.id;
-    $('qr-url').textContent = url;
+    const url = base + '?open=' + t.id; // مُستخدم لتوليد الرمز فقط، ولا يُعرض في البطاقة
 
     const canvas = $('qr-canvas');
     if (typeof window.QRCode === 'undefined') {
@@ -476,11 +476,16 @@
         const put = await fetch(prep.data.upload_url, { method: 'PUT', body: f });
         if (!put.ok) throw new Error('فشل رفع الملف');
       } else {
-        const { error } = await DB.storage.from('tenders').upload(t.pdf_path, f, {
+        // === تعديل حاسم: حذف الملف القديم ثم رفع الجديد لتجنب خطأ RLS ===
+        // 1) حذف الملف القديم من التخزين
+        const { error: delErr } = await DB.storage.from('tenders').remove([t.pdf_path]);
+        if (delErr) throw delErr;
+        // 2) رفع الملف الجديد (بما أن القديم حُذف، العملية become Insert جديد لا يحتاج سياسة UPDATE)
+        const { error: upErr } = await DB.storage.from('tenders').upload(t.pdf_path, f, {
           contentType: 'application/pdf',
-          upsert: true,
         });
-        if (error) throw error;
+        if (upErr) throw upErr;
+        // =======================================
       }
       closeModal('replace-modal');
       toast('✅ تم استبدال الملف — رمز QR نفسه ما زال صالحًا', 'success', 5000);
