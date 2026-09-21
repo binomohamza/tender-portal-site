@@ -470,29 +470,35 @@
         if (!prep.data || !prep.data.upload_url) throw new Error('خدمة R2 غير مهيأة');
         const put = await fetch(prep.data.upload_url, { method: 'PUT', body: f });
         if (!put.ok) throw new Error('فشل رفع الملف');
-      } else {
-        // === حلقة قوية لتجاوز أي خطأ تخزين ===
-        // نحاول 3 مرات لضمان النجاح
+            } else {
+        // === حلقة لمنع خطأ "The resource already exists" ===
+        // نحاول 3 مرات لضمان النجاح في حال وجود ملفاتrestelef
         for (let i = 0; i < 3; i++) {
-          // 1) حذف الملف القديم
+          // 1) حذف الملف القديم من التخزين
           const { error: delErr } = await DB.storage.from('tenders').remove([t.pdf_path]);
-          // إذا فشل الحذف، ننتظر نصف ثانية ونحاول مرة أخرى
           if (delErr) {
-            await new Promise(r => setTimeout(r, 500));
-            continue;
+            console.log("فشل الحذف في الدورة", i, "، إعادة المحاولة...");
+            await new Promise(r => setTimeout(r, 500)); // انتظار نصف ثانية
+            continue; // جولة جديدة من الحذف والرفع
           }
-          // 2) رفع الملف الجديد
+          // 2) رفع الملف الجديد (بما أن القديم حُذف، الرفع يصبح Insert جديد لا يحتاج سياسة UPDATE)
           const { error: upErr } = await DB.storage.from('tenders').upload(t.pdf_path, f, {
             contentType: 'application/pdf',
           });
           if (!upErr) {
-            // نجح الرفع، الخروج من الحلقة فوراً
+            // نجح الرفع، الخروج من حلقة المحاولات
             break;
           } else {
-            // إذا فشل الرفع، نحاول الدورة التالية (حذف وإعادة رفع)
+            console.log("فشل الرفع، إعادة الحذف والمحاولةagain...");
             continue;
           }
         }
+        // =======================================
+      }
+      closeModal('replace-modal');
+      toast('✅ تم استبدال الملف — رمز QR نفسه ما زال صالحًا', 'success', 5000);
+      A.refreshTenders();
+    }
         // =======================================
       }
       closeModal('replace-modal');
