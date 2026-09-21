@@ -470,28 +470,21 @@
         if (!prep.data || !prep.data.upload_url) throw new Error('خدمة R2 غير مهيأة');
         const put = await fetch(prep.data.upload_url, { method: 'PUT', body: f });
         if (!put.ok) throw new Error('فشل رفع الملف');
-            } else {
+      } else {
         // === حلقة لمنع خطأ "The resource already exists" ===
-        // نحاول 3 مرات لضمان النجاح في حال وجود ملفاتrestelef
-        for (let i = 0; i < 3; i++) {
-          // 1) حذف الملف القديم من التخزين
+        // نحاول الحذف والرفع لضمان خلو التخزين من الملفاتrestelef
+        for (let i = 0; i < 2; i++) {
+          // 1) حذف الملف القديم
           const { error: delErr } = await DB.storage.from('tenders').remove([t.pdf_path]);
           if (delErr) {
-            console.log("فشل الحذف في الدورة", i, "، إعادة المحاولة...");
             await new Promise(r => setTimeout(r, 500)); // انتظار نصف ثانية
-            continue; // جولة جديدة من الحذف والرفع
+            continue; // حاول مرة أخرى
           }
-          // 2) رفع الملف الجديد (بما أن القديم حُذف، الرفع يصبح Insert جديد لا يحتاج سياسة UPDATE)
+          // 2) رفع الملف الجديد (بما أن القديم حُذف، سيكون Insert جديد)
           const { error: upErr } = await DB.storage.from('tenders').upload(t.pdf_path, f, {
             contentType: 'application/pdf',
           });
-          if (!upErr) {
-            // نجح الرفع، الخروج من حلقة المحاولات
-            break;
-          } else {
-            console.log("فشل الرفع، إعادة الحذف والمحاولةagain...");
-            continue;
-          }
+          if (!upErr) break; // succeeded, exit loop
         }
         // =======================================
       }
