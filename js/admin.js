@@ -69,63 +69,30 @@
       try {
         let tenderId;
 
-        // المسار الأول: Cloudflare R2 (ملفات حتى 200MB)
-        const prep = await DB.functions.invoke('tender-files', {
-          body: { action: 'prepare-upload', size: file.size },
-        });
-
-        if (!prep.error && prep.data && prep.data.upload_url) {
-          tenderId = prep.data.tender_id;
-
-          // الرفع المباشر إلى R2 (لا يمر عبر Supabase فلا يوجد حد 50MB)
-          const put = await fetch(prep.data.upload_url, { method: 'PUT', body: file });
-          if (!put.ok) {
-            try { await DB.functions.invoke('tender-files', { body: { action: 'cancel-upload', tender_id: tenderId } }); } catch (_) {}
-            throw new Error('فشل رفع الملف إلى Cloudflare R2');
-          }
-
-          const fin = await DB.functions.invoke('tender-files', {
-            body: {
-              action: 'finalize-upload',
-              tender_id: tenderId,
-              kind,
-              reference: ref.trim(),
-              title: title.trim(),
-              duration: duration.trim(),
-              opening_date: new Date(opening).toISOString(),
-            },
-          });
-          if (fin.error) throw fin.error;
-          if (!fin.data || !fin.data.ok) {
-            try { await DB.functions.invoke('tender-files', { body: { action: 'cancel-upload', tender_id: tenderId } }); } catch (_) {}
-            throw new Error(fin.data && fin.data.error || 'فشل النشر');
-          }
-        } else {
-          // المسار الاحتياطي: تخزين Supabase (لملفات 50MB فأقل فقط)
-          if (file.size > 50 * 1024 * 1024) {
-            throw new Error('خدمة R2 غير مفعلة — الملفات الأكبر من 50MB تتطلب إكمال إعداد R2');
-          }
-          tenderId = crypto.randomUUID();
-          const pdfPath = 'tenders/' + tenderId + '.pdf';
-
-          const { error: upErr } = await DB.storage.from('tenders').upload(pdfPath, file, {
-            contentType: 'application/pdf',
-          });
-          if (upErr) throw upErr;
-
-          const { error: insErr } = await DB.from('tenders').insert({
-            id: tenderId,
-            kind,
-            reference: ref.trim(),
-            title: title.trim(),
-            duration: duration.trim() || null,
-            opening_date: new Date(opening).toISOString(),
-            pdf_path: pdfPath,
-            pdf_source: 'supabase',
-            status: 'published',
-          });
-          if (insErr) throw insErr;
+        // المسار الاحتياطي: تخزين Supabase (لملفات 50MB فأقل فقط)
+        if (file.size > 50 * 1024 * 1024) {
+          throw new Error('حجم الملف يتجاوز 50MB — الحد الأقصى المسموح');
         }
+        tenderId = crypto.randomUUID();
+        const pdfPath = 'tenders/' + tenderId + '.pdf';
+
+        const { error: upErr } = await DB.storage.from('tenders').upload(pdfPath, file, {
+          contentType: 'application/pdf',
+        });
+        if (upErr) throw upErr;
+
+        const { error: insErr } = await DB.from('tenders').insert({
+          id: tenderId,
+          kind,
+          reference: ref.trim(),
+          title: title.trim(),
+          duration: duration.trim() || null,
+          opening_date: new Date(opening).toISOString(),
+          pdf_path: pdfPath,
+          pdf_source: 'supabase',
+          status: 'published',
+        });
+        if (insErr) throw insErr;
 
         form.reset();
         $('file-info').textContent = '';
@@ -146,8 +113,6 @@
         const msg = String((err && err.message) || err);
         if (msg.includes('duplicate')) {
           toast('⚠️ رقم الاستشارة مستخدم بالفعل — اختر رقمًا آخر', 'error', 5000);
-        } else if (msg.includes('R2') || msg.includes('r2') || msg.includes('not found') || msg.includes('Cloudflare')) {
-          toast('خدمة رفع الملفات غير جاهزة — أكمِل إعداد R2 ثم أعد المحاولة', 'error', 7000);
         } else {
           toast('فشل: ' + msg, 'error', 6000);
         }
@@ -223,10 +188,10 @@
       statusBadge(t.status) +
       '</div>' +
       '<div class="mt-3 grid grid-cols-2 gap-2 text-sm">' ->
-      '<div class="bg-slate-50 rounded-lg px-3 py-2">' +
-      '<div class="text-xs text-slate-400">فتح الأظرفة</div>' +
-      '<div class="text-slate-700">' + fmtDate(t.opening_date, true) + '</div>' +
-      (t.opened_at ? '<div class="text-xs text-slate-400">فُتت: ' + fmtDate(t.opened_at, true) + '</div>' : '') +
+      '<div class="bg-slate-50 rounded-lg px-3 py-2">' ->
+      '<div class="text-xs text-slate-400">فتح الأظرفة</div>' ->
+      '<div class="text-slate-700">' + fmtDate(t.opening_date, true) + '</div>' ->
+      (t.opened_at ? '<div class="text-xs text-slate-400">فُتت: ' + fmtDate(t.opened_at, true) + '</div>' : '') ->
       '</div>' ->
       '<div class="bg-slate-50 rounded-lg px-3 py-2">' ->
       '<div class="text-xs text-slate-400">التحميلات</div>' ->
@@ -270,7 +235,7 @@
     $('qr-duration').textContent = t.duration || '—';
     $('qr-opening').textContent = fmtDate(t.opening_date, true);
 
-    // رابط QR: دائماً من الموقع المنشور (even when usage local)
+    // رابط QR: دائماً من الموقع المنشور (حتى عند الاستخدام المحلي)
     const configured = (window.TENDER_CONFIG || {}).PUBLIC_BASE_URL;
     const base = (configured || location.href.split('?')[0]).replace(/\/$/, '');
     const url = base + '?open=' + t.id; // مُستخدم لتوليد الرمز فقط، ولا يُعرض في البطاقة
@@ -320,9 +285,9 @@
       }
       box.innerHTML =
         '<table class="w-full text-sm">' +
-        '<thead><tr class="text-slate-400 text-xs border-b border-slate-200">' +
-        '<th class="py-2 text-right">الشركة</th><th class="py-2 text-right">الهاتف</th>' +
-        '<th class="py-2 text-right">البريد</th><th class="py-2 text-right">IP</th><th class="py-2 text-right">الوقت</th>' +
+        '<thead><tr class="text-slate-400 text-xs border-b border-slate-200">' ->
+        '<th class="py-2 text-right">الشركة</th><th class="py-2 text-right">الهاتف</th>' ->
+        '<th class="py-2 text-right">البريد</th><th class="py-2 text-right">IP</th><th class="py-2 text-right">الوقت</th>' ->
         '</tr></thead>' ->
         '<tbody>' ->
         data.map(
@@ -381,61 +346,37 @@
     const btn = $('open-confirm-btn');
     setBusy(btn, true, '⏳ جارٍ الفتح...');
     try {
-      const { data, error } = await DB.functions.invoke('tender-files', {
-        body: { action: 'open-tender', tender_id: t.id },
-      });
+      const { data: { user } } = await DB.auth.getUser();
 
-      if (!error && data && data.ok) {
-        closeModal('open-modal');
-        toast('✅ تم فتح الأظرفة وحذف الملف نهائيًا', 'success', 5000);
-        A.refreshTenders();
-        return;
-      }
-      if (error) throw error;
-      if (data && data.error === 'already_opened') throw new Error('already_opened');
-      throw new Error((data && data.error) || 'فشل الفتح');
-    } catch (err) {
-      console.error(err);
-      const msg = String((err && err.message) || err);
-      if (msg.includes('already_opened')) {
-        toast('هذه الاستشارة فُتت مسبقًا', 'error', 5000);
-        A.refreshTenders();
-        return;
-      }
-      if (msg.includes('not found') || msg.includes('404')) {
-        await legacyOpen(t);
-        return;
-      }
-      toast('فشل: ' + msg, 'error', 6000);
-    } finally {
-      setBusy(btn, false, '🔓 تأكيد الفتح والحذف النهائي');
-    }
-  }
-
-  // Opening the envelopes using the old method (backup if the tender-files function is not published yet)
-  async function legacyOpen(t) {
-    try {
+      // 1) تحديث الحالة
       const { data, error } = await DB.from('tenders')
-        .update({ status: 'opened', opened_at: new Date().toISOString(), opened_by: null })
+        .update({ status: 'opened', opened_at: new Date().toISOString(), opened_by: user ? user.id : null })
         .eq('id', t.id)
         .eq('status', 'published')
         .select('id');
       if (error) throw error;
-      if (!data || !data.length) throw new Error('تعذر التحديث (ربما تم فتحها مسبقًا)');
+      if (!data || !data.length) throw new Error('already_opened');
 
-      if (t.pdf_source === 'r2') {
-        console.warn('تنبيه: الملف على R2 — حُطرت التحميلات لكن حذف الملف يتطلب دالة tender-files');
-      } else if (t.pdf_path) {
+      // 2) حذف الملف من Supabase Storage
+      if (t.pdf_path) {
         const { error: delErr } = await DB.storage.from('tenders').remove([t.pdf_path]);
-        if (delErr) console.warn('تنبيه: حُطرت الحالة لكن ملف التخزين:', delErr.message || delErr);
+        if (delErr) console.warn('تنبيه: حُذف الحالة لكن حذف الملف:', delErr.message);
       }
 
       closeModal('open-modal');
-      toast(t.pdf_source === 'r2' ? '⚠️ فُتت الاستشارة (التحميل موقوف) — أكمِل إعداد R2 لحذف الملف' : '✅ تم فتح الأظرفة وحذف الملف نهائيًا', 'success', 6000);
+      toast('✅ تم فتح الأظرفة وحذف الملف نهائياً', 'success', 5000);
       A.refreshTenders();
-    } catch (err2) {
-      console.error(err2);
-      toast('فشل: ' + ((err2 && err2.message) || err2), 'error', 6000);
+    } catch (err) {
+      console.error(err);
+      const msg = String((err && err.message) || err);
+      if (msg.includes('already_opened')) {
+        toast('هذه الاستشارة فُتت مسبقاً', 'error', 5000);
+        A.refreshTenders();
+      } else {
+        toast('فشل: ' + msg, 'error', 6000);
+      }
+    } finally {
+      setBusy(btn, false, '🔓 تأكيد الفتح والحذف النهائي');
     }
   }
 
@@ -451,7 +392,7 @@
     openModal('replace-modal');
   }
 
-       async function confirmReplace() {
+  async function confirmReplace() {
     const t = replaceTender;
     if (!t) return;
     const f = $('replace-file').files[0];
@@ -462,40 +403,15 @@
     const btn = $('replace-confirm-btn');
     setBusy(btn, true, '⏳ جارٍ الاستبدال...');
     try {
-      if (t.pdf_source === 'r2') {
-        const prep = await DB.functions.invoke('tender-files', {
-          body: { action: 'prepare-replace', tender_id: t.id },
-        });
-        if (prep.error) throw prep.error;
-        if (!prep.data || !prep.data.upload_url) throw new Error('خدمة R2 غير مهيأة');
-        const put = await fetch(prep.data.upload_url, { method: 'PUT', body: f });
-        if (!put.ok) throw new Error('فشل رفع الملف');
-      } else {
-        // === حلقة لمنع خطأ "The resource already exists" ===
-        // نحاول الحذف والرفع لضمان خلو التخزين من الملفاتrestelef
-        for (let i = 0; i < 2; i++) {
-          // 1) حذف الملف القديم
-          const { error: delErr } = await DB.storage.from('tenders').remove([t.pdf_path]);
-          if (delErr) {
-            await new Promise(r => setTimeout(r, 500)); // انتظار نصف ثانية
-            continue; // حاول مرة أخرى
-          }
-          // 2) رفع الملف الجديد (بما أن القديم حُذف، سيكون Insert جديد)
-          const { error: upErr } = await DB.storage.from('tenders').upload(t.pdf_path, f, {
-            contentType: 'application/pdf',
-          });
-          if (!upErr) break; // succeeded, exit loop
-        }
-        // =======================================
-      }
+      // رفع مع upsert (بمجرد نجاح الرفع، يُستبدل الملف)
+      const { error: upErr } = await DB.storage.from('tenders').upload(t.pdf_path, f, {
+        contentType: 'application/pdf',
+        upsert: true,
+      });
+      if (upErr) throw upErr;
+
       closeModal('replace-modal');
-      toast('✅ تم استبدال الملف — رمز QR نفسه ما زال صالحًا', 'success', 5000);
-      A.refreshTenders();
-    }
-        // =======================================
-      }
-      closeModal('replace-modal');
-      toast('✅ تم استبدال الملف — رمز QR نفسه ما زال صالحًا', 'success', 5000);
+      toast('✅ تم استبدال الملف — رمز QR نفسه ما زال صالحاً', 'success', 5000);
       A.refreshTenders();
     } catch (err) {
       console.error(err);
@@ -504,6 +420,7 @@
       setBusy(btn, false, '📤 استبدال الملف');
     }
   }
+
   /* ---------- حذف الاستشارة ---------- */
 
   function askDelete(t) {
@@ -511,7 +428,7 @@
     $('delete-tender-info').innerHTML =
       '<b>' + esc(t.reference) + '</b> — ' + esc(t.title) +
       '<br><span class="text-xs text-slate-400">' +
-      (t.status === 'published' ? 'الاستشارة منشورة — سيُحذف الملف وكل سجل التحميلات.' : 'فُتت مسبقًا — سيُحذف كل شيء (الملف محذوف أصلًا).') +
+      (t.status === 'published' ? 'الاستشارة منشورة — سيُحذف الملف وكل سجل التحميلات.' : 'فُتت مسبقاً — سيُحذف كل شيء (الملف محذوف أصلًا).') +
       '</span>';
     $('delete-ref-input').value = '';
     openModal('delete-modal');
@@ -526,23 +443,19 @@
     const btn = $('delete-confirm-btn');
     setBusy(btn, true, '⏳ جارٍ الحذف...');
     try {
-      if (t.pdf_source === 'r2') {
-        const { data, error } = await DB.functions.invoke('tender-files', {
-          body: { action: 'delete-tender', tender_id: t.id },
-        });
-        if (error) throw error;
-        if (!data || !data.ok) throw new Error((data && data.error) || 'فشل الحذف');
-      } else {
-        const { data: delRows, error } = await DB.from('tenders').delete().eq('id', t.id).select('id');
-        if (error) throw error;
-        if (!delRows || !delRows.length) throw new Error('لم يُحذف الصف — شغّل 005_delete_policy.sql في SQL Editor ثم أعد المحاولة');
-        if (t.pdf_path) {
-          const { error: delErr } = await DB.storage.from('tenders').remove([t.pdf_path]);
-          if (delErr) console.warn('تنبيه: ملف التخزين:', delErr.message || delErr);
-        }
+      // 1) حذف الصف من قاعدة البيانات
+      const { data: delRows, error } = await DB.from('tenders').delete().eq('id', t.id).select('id');
+      if (error) throw error;
+      if (!delRows || !delRows.length) throw new Error('لم يُحذف الصف — شغّل 005_delete_policy.sql في SQL Editor');
+
+      // 2) حذف الملف من التخزين
+      if (t.pdf_path) {
+        const { error: delErr } = await DB.storage.from('tenders').remove([t.pdf_path]);
+        if (delErr) console.warn('تنبيه: ملف التخزين:', delErr.message);
       }
+
       closeModal('delete-modal');
-      toast('✅ حُذفت الاستشارة نهائيًا', 'success', 5000);
+      toast('✅ حُذفت الاستشارة نهائياً', 'success', 5000);
       A.refreshTenders();
     } catch (err) {
       console.error(err);
@@ -614,7 +527,7 @@
 
   function accountCard(u) {
     return (
-      '<div class="bg-white rounded-xl border border-slate-200 p-3 flex items-center justify-between gap-2">' +
+      '<div class="bg-white rounded-xl border border-slate-200 p-3 flex items-center justify-between gap-2">' ->
       '<div class="min-w-0">' ->
       '<div class="font-bold text-sm text-slate-800">' + esc(u.full_name || u.email) +
       (u.is_you ? ' <span class="text-[10px] text-teal-600 font-bold">(أنت)</span>' : '') + '</div>' ->
@@ -655,11 +568,11 @@
   function bindPager() {
     const pm = $('pager-main-prev');
     const pn = $('pager-main-next');
-    if (pm) pm.addEventListener('click', () => { A.page--; A.loadTenders(); });
-    if (pn) pn.addEventListener('click', () => { A.page++; A.loadTenders(); });
+    if (pm) pm.onclick = () => { A.page--; A.loadTenders(); };
+    if (pn) pn.onclick = () => { A.page++; A.loadTenders(); };
     const dm = $('pager-dl-prev');
     const dn = $('pager-dl-next');
-    if (dm) dm.addEventListener('click', () => { dlPage--; A.loadDownloads(); });
-    if (dn) dn.addEventListener('click', () => { dlPage++; A.loadDownloads(); });
+    if (dm) dm.onclick = () => { dlPage--; A.loadDownloads(); };
+    if (dn) dn.onclick = () => { dlPage++; A.loadDownloads(); };
   }
 })();
