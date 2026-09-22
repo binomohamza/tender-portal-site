@@ -45,11 +45,11 @@
       kind_tender: '📋 طلب عروض',
       kind_consultation_s: 'استشارة',
       kind_tender_s: 'طلب عروض',
-      f_reference: 'رقم الاستشارة *',
-      f_reference_ph: '045/2026',
-      f_duration: 'مدة الاستشارة',
+      f_reference: 'الرقم *',
+      f_reference_ph: '045/UAT/2026',
+      f_duration: 'المدة',
       f_duration_ph: '60 يومًا',
-      f_title: 'عنوان الاستشارة *',
+      f_title: 'العنوان *',
       f_title_ph: 'استشارة — توريد تجهيزات مخبرية',
       f_opening: 'تاريخ فتح الأظرفة *',
       f_file: 'دفتر الشروط (PDF — بحد أقصى 50MB) *',
@@ -116,7 +116,7 @@
 
       // شريط التنقل
       nav_create: 'إنشاء',
-      nav_tenders: 'الاستشارات',
+      nav_tenders: 'الاستشارات / طلبات العروض',
       nav_opening: 'الفتح',
       nav_accounts: 'الحسابات',
 
@@ -302,7 +302,7 @@
       kind_consultation_s: 'Consultation',
       kind_tender_s: "Appel d'offres",
       f_reference: "Numéro d'avis *",
-      f_reference_ph: '045/2026',
+      f_reference_ph: '045/UAT/2026',
       f_duration: 'Durée',
       f_duration_ph: '60 jours',
       f_title: 'Intitulé *',
