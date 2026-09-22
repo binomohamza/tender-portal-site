@@ -1,26 +1,94 @@
-/* ===== صفحة المتعامل (?open=UUID) — عبر دالة خادم Supabase ===== */
+/* ===== صفحة المتعامل (?open=UUID أو ?c=رمز قصير) — تصميم رسمي عصري ثنائي اللغة ===== */
 (function () {
   const D = (window.DownloadPage = {});
-  const kindName = (k) => (k === 'tender' ? 'طلب عروض' : 'استشارة');
+  const t = (k, v) => I18N.t(k, v);
+  const kindName = (k) => (k === 'tender' ? t('kind_tender_s') : t('kind_consultation_s'));
 
   let token = null;
   let tender = null;
   let signed = { url: '', expiresAt: 0, updated: false };
   let lastInfo = null;
   let expiryTimer = null;
+  let currentView = null;
+  let lastErr = null;
+  let lastErrRetry = false;
+  let langBound = false;
 
   const $ = (id) => document.getElementById(id);
   const val = (id) => ($(id) ? $(id).value : '');
   const root = () => $('download-root') || $('public-root');
 
-  D.init = async function (t) {
-    token = t;
+  function applyDir() {
+    document.documentElement.lang = I18N.lang;
+    document.documentElement.dir = I18N.lang === 'ar' ? 'rtl' : 'ltr';
+  }
+
+  function otherLabel() {
+    return I18N.lang === 'ar' ? '🇫🇷 Français' : '🇩🇿 العربية';
+  }
+
+  // الرأس الرسمي: تدرج لوني + الشعار + اسم الجامعة + زر تبديل اللغة
+  function shell(inner) {
+    return (
+      '<div>' +
+      '<div class="bg-gradient-to-b from-primary-700 to-primary-900 text-white px-5 pt-4 pb-8 rounded-b-3xl shadow-md relative z-10">' +
+      '<div class="flex items-center justify-between mb-3">' +
+      '<span class="text-[11px] font-bold bg-white/15 rounded-full px-3 py-1">' + t('office') + '</span>' +
+      '<button id="p-lang-btn" type="button" class="text-[11px] font-bold bg-white/15 hover:bg-white/25 rounded-full px-3 py-1 transition">' + otherLabel() + '</button>' +
+      '</div>' +
+      '<img src="img/logo.png" alt="" class="mx-auto h-16 w-16 object-contain mb-2 bg-white rounded-2xl p-1.5 shadow">' +
+      '<h1 class="text-base font-black leading-snug">' + t('univ') + '</h1>' +
+      '<p class="text-[11px] text-teal-100 mt-1 font-semibold">' + t('p_download_sub') + '</p>' +
+      '</div>' +
+      '<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 -mt-4 relative z-20">' + inner + '</div>' +
+      '</div>'
+    );
+  }
+
+  function stepBadge(n, label) {
+    return (
+      '<div class="flex items-center gap-2 mb-3">' +
+      '<span class="w-6 h-6 rounded-full bg-primary-700 text-white text-xs font-black flex items-center justify-center shrink-0">' + n + '</span>' +
+      '<span class="font-bold text-slate-800 text-sm">' + label + '</span>' +
+      '</div>'
+    );
+  }
+
+  function bindLangToggle() {
+    if (langBound) return;
+    langBound = true;
+    const r = root();
+    r.addEventListener('click', (e) => {
+      if (e.target.closest('#p-lang-btn')) {
+        I18N.setLang(I18N.other());
+        rerender();
+      }
+    });
+  }
+
+  function rerender() {
+    applyDir();
+    I18N.applyStatic();
+    switch (currentView) {
+      case 'loading': renderLoading(); break;
+      case 'notfound': renderNotFound(); break;
+      case 'closed': renderClosed(); break;
+      case 'error': renderError(lastErr, lastErrRetry); break;
+      case 'form': renderForm(); break;
+      case 'working': renderWorking(); break;
+      case 'done': renderDone(); break;
+    }
+  }
+
+  D.init = async function (tt) {
+    token = tt;
     tender = null;
     lastInfo = null;
+    applyDir();
+    bindLangToggle();
     renderLoading();
     try {
-      // العرض العام: بدون مسار الملف
-      const { data, error } = await DB.from('tenders_public').select('*').eq('id', t).maybeSingle();
+      const { data, error } = await DB.from('tenders_public').select('*').eq('id', tt).maybeSingle();
       if (error) throw error;
       if (!data) return renderNotFound();
       tender = data;
@@ -34,54 +102,52 @@
 
   /* ---------- حالات العرض ---------- */
 
-  function shell(inner) {
-    return (
-      '<div class="text-center">' +
-      '<img src="img/logo.png" alt="" class="mx-auto h-16 w-16 object-contain mb-2">' +
-      '<h1 class="text-lg font-black text-slate-800 leading-snug">جامعة عين تموشنت بلحاج بوشعيب</h1>' +
-      '<p class="text-xs text-slate-400 mb-6">مكتب الصفقات — تحميل دفتر الشروط</p>' +
-      '<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-right">' + inner + '</div>' +
+  function renderLoading() {
+    currentView = 'loading';
+    root().innerHTML = shell(
+      '<div class="text-center py-8">' +
+      '<div class="spinner my-4"></div>' +
+      '<p class="text-sm text-slate-400">' + t('loading') + '</p>' +
       '</div>'
     );
   }
 
-  function renderLoading() {
-    root().innerHTML = shell(
-      '<div class="spinner my-8"></div><p class="text-sm text-slate-400 text-center">جارٍ التحقق...</p>'
-    );
-  }
-
   function renderNotFound() {
+    currentView = 'notfound';
     root().innerHTML = shell(
       '<div class="text-center py-6">' +
-      '<div class="text-5xl mb-4">🚫</div>' +
-      '<h2 class="font-bold text-slate-800 mb-2">الاستشارة غير موجودة</h2>' +
-      '<p class="text-sm text-slate-500 leading-relaxed">تأكد من مسح الرمز الصحيح، أو تواصل مع مكتب الصفقات.</p>' +
+      '<div class="text-5xl mb-3">🚫</div>' +
+      '<h2 class="font-black text-slate-800 mb-2">' + t('notfound_t') + '</h2>' +
+      '<p class="text-sm text-slate-500 leading-relaxed">' + t('notfound_s') + '</p>' +
       '</div>'
     );
   }
 
   function renderClosed() {
+    currentView = 'closed';
     root().innerHTML = shell(
       '<div class="text-center py-6">' +
-      '<div class="text-5xl mb-4">🔒</div>' +
-      '<h2 class="font-black text-slate-800 mb-2">تم فتح الأظرفة</h2>' +
-      '<p class="text-sm text-slate-500 leading-relaxed">انتهت فترة تحميل دفتر الشروط لهذه الاستشارة، وحُذف الملف من الخادم.</p>' +
+      '<div class="text-5xl mb-3">🔒</div>' +
+      '<h2 class="font-black text-slate-800 mb-2">' + t('closed_t') + '</h2>' +
+      '<p class="text-sm text-slate-500 leading-relaxed">' + t('closed_s') + '</p>' +
       '</div>'
     );
   }
 
   function renderError(err, retryable) {
+    currentView = 'error';
+    lastErr = err;
+    lastErrRetry = !!retryable;
     let msg = (err && err.message) || String(err);
     if (msg.includes('get-download') || msg.includes('function')) {
-      msg = 'خدمة التحميل غير مفعلة حاليًا — تواصل مع مكتب الصفقات.';
+      msg = t('err_func');
     }
     root().innerHTML = shell(
       '<div class="text-center py-6">' +
-      '<div class="text-5xl mb-4">😕</div>' +
-      '<h2 class="font-black text-slate-800 mb-2">حدث خطأ</h2>' +
+      '<div class="text-5xl mb-3">😕</div>' +
+      '<h2 class="font-black text-slate-800 mb-2">' + t('err_t') + '</h2>' +
       '<p class="text-sm text-slate-500 mb-4">' + esc(msg) + '</p>' +
-      (retryable ? '<button id="retry-btn" class="btn-secondary">🔄 إعادة المحاولة</button>' : '') +
+      (retryable ? '<button id="retry-btn" type="button" class="btn-secondary">' + t('retry') + '</button>' : '') +
       '</div>'
     );
     const b = $('retry-btn');
@@ -89,53 +155,64 @@
   }
 
   function renderForm() {
+    currentView = 'form';
+    const openingLabel = t('f_opening').replace(' *', '').replace(' *', '');
     root().innerHTML = shell(
       '<div class="mb-5">' +
-      '<div class="flex items-center justify-between gap-2 mb-1">' +
-      '<span class="font-black text-slate-800">' + kindName(tender.kind) + ' عدد: ' + esc(tender.reference) + '</span>' +
-      '<span class="text-xs font-bold text-teal-700 bg-teal-50 border border-teal-200 rounded-full px-2 py-0.5">منشورة</span>' +
+      stepBadge(1, t('step1')) +
+      '<div class="flex items-center gap-2 flex-wrap mb-1">' +
+      '<span class="font-black text-slate-800 text-base" dir="ltr">' + esc(tender.reference) + '</span>' +
+      '<span class="text-[10px] font-bold px-2 py-0.5 rounded ' + (tender.kind === 'tender' ? 'bg-indigo-50 text-indigo-700' : 'bg-primary-50 text-primary-700') + '">' + kindName(tender.kind) + '</span>' +
+      '<span class="text-[10px] font-bold text-primary-700 bg-primary-50 border border-primary-200 rounded-full px-2 py-0.5">' + t('p_published') + '</span>' +
       '</div>' +
-      '<p class="text-sm text-slate-600">' + esc(tender.title) + '</p>' +
-      (tender.duration ? '<p class="text-xs text-slate-400 mt-1">المدة: ' + esc(tender.duration) + '</p>' : '') +
-      '<p class="text-xs text-slate-400 mt-1">فتح الأظرفة: ' + esc(fmtDate(tender.opening_date, true)) + '</p>' +
+      '<p class="text-sm text-slate-600 leading-relaxed">' + esc(tender.title) + '</p>' +
+      '<div class="grid grid-cols-2 gap-2 mt-3 text-xs">' +
+      '<div class="bg-slate-50 rounded-lg px-3 py-2"><div class="text-slate-400 text-[10px] mb-0.5">' + t('f_duration').replace(' *', '') + '</div><div class="text-slate-700 font-semibold">' + esc(tender.duration || '—') + '</div></div>' +
+      '<div class="bg-slate-50 rounded-lg px-3 py-2"><div class="text-slate-400 text-[10px] mb-0.5">' + openingLabel + '</div><div class="text-slate-700 font-semibold">' + fmtDate(tender.opening_date, true) + '</div></div>' +
+      '</div>' +
       '</div>' +
       '<form id="bidder-form" class="space-y-3">' +
-      '<div><label class="lbl">اسم الشركة / المؤسسة *</label>' +
-      '<input id="d-company" class="inp" type="text" required placeholder="مثال: شركة البناء الحديث ش.م.م"></div>' +
-      '<div><label class="lbl">رقم الهاتف *</label>' +
+      stepBadge(2, t('step2')) +
+      '<div><label class="lbl">' + t('f_company') + '</label>' +
+      '<input id="d-company" class="inp" type="text" required placeholder="' + esc(t('f_company_ph')) + '"></div>' +
+      '<div><label class="lbl">' + t('f_phone') + '</label>' +
       '<input id="d-phone" class="inp" type="tel" dir="ltr" required placeholder="0550 00 00 00"></div>' +
-      '<div><label class="lbl">البريد الإلكتروني *</label>' +
+      '<div><label class="lbl">' + t('f_email') + '</label>' +
       '<input id="d-email" class="inp" type="email" dir="ltr" required placeholder="you@example.com"></div>' +
-      '<button type="submit" class="btn-primary w-full mt-2">📥 تحميل دفتر الشروط</button>' +
-      '<p class="text-[11px] text-slate-400 leading-relaxed">تُسجَّل بيانات مؤسستك في سجل التحميلات. ' +
-      'رابط التحميل مؤقت وصالح لمدة 10 دقائق فقط، ويُغلق نهائيًا بعد فتح الأظرفة.</p>' +
+      stepBadge(3, t('step3')) +
+      '<button type="submit" class="btn-primary w-full mt-2">' + t('btn_download') + '</button>' +
+      '<p class="text-[11px] text-slate-400 leading-relaxed">' + t('form_note') + '</p>' +
       '</form>'
     );
     $('bidder-form').addEventListener('submit', onFormSubmit);
   }
 
   function renderWorking(msg) {
+    currentView = 'working';
     root().innerHTML = shell(
-      '<div class="spinner my-8"></div>' +
-      '<p class="text-sm text-slate-500 text-center mt-4">' + esc(msg) + '</p>'
+      '<div class="text-center py-8">' +
+      '<div class="spinner my-4"></div>' +
+      '<p class="text-sm text-slate-500">' + esc(msg || t('working')) + '</p>' +
+      '</div>'
     );
   }
 
   function renderDone() {
+    currentView = 'done';
     root().innerHTML = shell(
       '<div class="text-center py-4">' +
       '<div class="text-5xl mb-3">✅</div>' +
-      '<h2 class="font-black text-slate-800 mb-1">تم التحميل بنجاح</h2>' +
-      '<p class="text-sm text-slate-500 mb-4">' +
+      '<h2 class="font-black text-slate-800 mb-2">' + t('done_title') + '</h2>' +
+      '<p class="text-sm text-slate-500 mb-4 leading-relaxed">' +
       (signed.updated
-        ? 'تم تحديث سجل <b>' + esc(lastInfo.company) + '</b> (كانت لديكم عملية تحميل سابقة — لم يكرر السجل).'
-        : 'سُجِّلت بيانات <b>' + esc(lastInfo.company) + '</b> في سجل التحميلات.') +
+        ? t('done_upd', { c: esc(lastInfo.company) })
+        : t('done_new', { c: esc(lastInfo.company) })) +
       '</p>' +
-      '<div class="bg-slate-50 rounded-xl p-3 mb-4">' +
-      '<div class="text-xs text-slate-400 mb-1">صلاحية الرابط المؤقت تنتهي خلال</div>' +
-      '<div id="expiry-cd" class="text-xl font-black text-teal-700 tabular-nums"></div>' +
+      '<div class="bg-primary-50 border border-primary-200 rounded-xl p-3 mb-4">' +
+      '<div class="text-[11px] text-primary-700 mb-1 font-semibold">' + t('expiry_l') + '</div>' +
+      '<div id="expiry-cd" class="text-xl font-black text-primary-800 tabular-nums" dir="ltr"></div>' +
       '</div>' +
-      '<button id="redownload-btn" class="btn-secondary w-full">⬇️ إعادة التحميل</button>' +
+      '<button id="redownload-btn" type="button" class="btn-secondary w-full">' + t('redownload') + '</button>' +
       '</div>'
     );
     $('redownload-btn').addEventListener('click', () => D.redownload());
@@ -145,7 +222,7 @@
       if (!el) return clearInterval(expiryTimer);
       const ms = signed.expiresAt - Date.now();
       if (ms <= 0) {
-        el.textContent = 'انتهت الصلاحية';
+        el.textContent = t('cd_expire_in');
         el.classList.add('text-red-600');
         return;
       }
@@ -160,8 +237,8 @@
     const company = val('d-company').trim();
     const phone = val('d-phone').trim();
     const email = val('d-email').trim();
-    if (!company || !phone || !email) return toast('أكمل جميع الحقول المطلوبة', 'error');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast('البريد الإلكتروني غير صالح', 'error');
+    if (!company || !phone || !email) return toast(t('t_pub_fill'), 'error');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast(t('t_pub_bademail'), 'error');
     startDownload({ company, phone, email });
   }
 
@@ -176,31 +253,30 @@
     });
     if (error) {
       if (String(error.message || error).includes('get-download')) {
-        throw new Error('خدمة التحميل غير مفعلة (get-download)');
+        throw new Error(t('err_func'));
       }
       throw error;
     }
     if (!data || !data.url) {
       if (data && data.error === 'unavailable') {
-        throw new Error('الاستشارة لم تعد متاحة — ربما تم فتح الأظرفة');
+        throw new Error(t('err_unavailable'));
       }
-      throw new Error('تعذر تجهيز رابط التحميل');
+      throw new Error(t('err_link'));
     }
     return { url: data.url, expiresAt: Date.now() + (data.expires_in || 600) * 1000, updated: !!data.updated };
   }
 
-  async function startDownload(info) {
+  function startDownload(info) {
     lastInfo = info;
-    renderWorking('جارٍ تسجيل بياناتك وتجهيز الملف...');
-    try {
-      signed = await fetchViaFunction(info);
-      // التنزيل المباشر من الرابط المؤقت (يدعم الملفات الكبيرة)
+    renderWorking(t('working'));
+    fetchViaFunction(info).then((r) => {
+      signed = r;
       window.location.href = signed.url;
       renderDone();
-    } catch (err) {
+    }).catch((err) => {
       console.error(err);
       renderError(err, false);
-    }
+    });
   }
 
   D.redownload = async function () {
@@ -208,17 +284,22 @@
     try {
       if (signed.url && Date.now() < signed.expiresAt - 30000) {
         window.location.href = signed.url;
-        toast('جارٍ التنزيل (الرابط ما زال صالحًا)', 'success', 2500);
+        toast(t('toast_dl_working'), 'success', 2500);
         return;
       }
-      renderWorking('جارٍ توليد رابط جديد...');
+      renderWorking(t('redrawing'));
       signed = await fetchViaFunction(lastInfo);
       window.location.href = signed.url;
       renderDone();
     } catch (err) {
       console.error(err);
-      toast('تعذر التحميل: ' + ((err && err.message) || err), 'error', 6000);
+      toast(t('toast_dl_fail', { msg: (err && err.message) || err }), 'error', 6000);
       D.init(token);
     }
   };
+
+  D.onLangChange = function () {
+    if (currentView) rerender();
+  };
+  Object.defineProperty(D, 'view', { get: () => currentView });
 })();
