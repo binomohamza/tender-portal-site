@@ -80,13 +80,10 @@
   function bindLangToggle() {
     $('public-root').addEventListener('click', (e) => {
       if (!e.target.closest('#p-lang-btn')) return;
+      if (window.DownloadPage && window.DownloadPage.view) return; // download.js يتولى الزر
       I18N.setLang(I18N.other());
       applyDir();
-      if (window.DownloadPage && window.DownloadPage.view) {
-        window.DownloadPage.onLangChange();
-      } else {
-        neutralRefresh();
-      }
+      neutralRefresh();
     });
   }
 
