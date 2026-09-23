@@ -65,6 +65,10 @@
       card_downloads_l: 'التحميلات',
       btn_qr: '🔳 بطاقة QR',
       btn_downloaders: '👥 من حمّل ({n})',
+      btn_direct_dl: '📄 تحميل الدفتر',
+      t_direct_start: 'جارٍ تجهيز رابط التحميل…',
+      t_direct_fail: 'تعذّر التحميل المباشر — تأكد أن الاستشارة منشورة',
+      t_direct_as: 'لجنة فتح الأظرفة',
       btn_replace: '📄 تغيير دفتر الشروط',
       btn_open: '🔓 فتح الأظرفة',
       btn_open_locked: '🔒 بانتظار موعد الفتح',
@@ -157,6 +161,19 @@
       // رسائل
       t_admin_only_create: 'الإنشاء متاح للإداري فقط',
       t_fill_all: 'أكمل جميع الحقول المطلوبة',
+      t_bad_email: 'البريد الإلكتروني غير صالح',
+      t_ref_long: 'الرقم طويل جدًا (50 حرفًا كحد أقصى)',
+      t_title_long: 'العنوان طويل جدًا (200 حرف كحد أقصى)',
+      t_duration_long: 'المدة طويلة جدًا (100 حرف كحد أقصى)',
+      t_bad_date: 'التاريخ غير صالح',
+      t_idle: 'تم تسجيل خروجك تلقائيًا بعد 30 دقيقة من عدم النشاط (أمان)',
+      rm_today: 'اليوم',
+      rm_tomorrow: 'غدًا',
+      rm_open_word: 'فتح الاستشارة',
+      rm_title: 'مواعيد الفتح',
+      rm_empty: 'لا توجد مواعيد فتح هذا الأسبوع',
+      rm_auto: 'يتحدّث تلقائيًا كل 5 دقائق',
+      rm_hide: '✕ إخفاء',
       t_pdf_only: 'الملف يجب أن يكون PDF',
       t_too_big: 'حجم الملف يتجاوز 50MB',
       t_dup_ref: '⚠️ رقم الاستشارة "{ref}" موجود بالفعل — اختر رقمًا آخر',
@@ -190,7 +207,7 @@
       t_delete_perm: 'الحذف متاح للإداري فقط',
       busy_delete: '⏳ جارٍ الحذف...',
       t_delete_fail: 'فشل الحذف',
-      t_not_deleted: 'لم ينفذ الحذف — شغّل ملف التحديث 006_full_update.sql في SQL Editor (السماح بالحذف)',
+      t_not_deleted: 'لم ينفذ الحذف — سجّل خروجًا ثم دخولًا مرة واحدة وأعد المحاولة (تحديث الأمان 009)',
       t_deleted: '✅ حُذفت الاستشارة نهائيًا',
       t_acc_perm: 'إدارة الحسابات متاحة للإداري فقط',
       t_fill: 'أكمل جميع الحقول',
@@ -320,6 +337,10 @@
       card_downloads_l: 'Téléchargements',
       btn_qr: '🔳 Carte QR',
       btn_downloaders: '👥 Téléchargements ({n})',
+      btn_direct_dl: '📄 Télécharger le DT',
+      t_direct_start: 'Préparation du lien de téléchargement…',
+      t_direct_fail: 'Échec du téléchargement direct — vérifiez que l’avis est publié',
+      t_direct_as: "Commission d'ouverture",
       btn_replace: 'Remplacer le cahier des charges',
       btn_open: '🔓 Ouvrir les plis',
       btn_open_locked: '🔒 En attente de la date d’ouverture',
@@ -374,7 +395,7 @@
 
       qr_title: 'Carte QR — à remettre à l’opérateur',
       qr_office: 'Bureau des marchés — Bon de téléchargement du cahier des charges',
-      qr_count: 'N° : ',
+      qr_count: 'N° ',
       qr_dur_l: 'Durée',
       qr_op_l: 'Ouverture',
       qr_note: "Scannez le code avec la caméra du téléphone pour ouvrir la page de téléchargement. Le lien temporaire est valable 10 minutes et les coordonnées de votre organisme sont enregistrées à chaque téléchargement.",
@@ -405,6 +426,19 @@
 
       t_admin_only_create: 'La création est réservée à l’administrateur',
       t_fill_all: 'Remplissez tous les champs requis',
+      t_bad_email: 'Adresse e-mail invalide',
+      t_ref_long: 'Référence trop longue (50 caractères max)',
+      t_title_long: 'Intitulé trop long (200 caractères max)',
+      t_duration_long: 'Durée trop longue (100 caractères max)',
+      t_bad_date: 'Date invalide',
+      t_idle: 'Déconnexion automatique après 30 min d’inactivité (sécurité)',
+      rm_today: 'Aujourd’hui',
+      rm_tomorrow: 'Demain',
+      rm_open_word: 'Ouverture de l’avis',
+      rm_title: 'Calendrier d’ouverture',
+      rm_empty: 'Aucune ouverture prévue cette semaine',
+      rm_auto: 'Actualisation automatique toutes les 5 min',
+      rm_hide: '✕ Masquer',
       t_pdf_only: 'Le fichier doit être un PDF',
       t_too_big: 'Le fichier dépasse 50 Mo',
       t_dup_ref: '⚠️ Le numéro « {ref} » existe déjà — choisissez-en un autre',
@@ -438,7 +472,7 @@
       t_delete_perm: 'La suppression est réservée à l’administrateur',
       busy_delete: '⏳ Suppression en cours...',
       t_delete_fail: 'Échec de la suppression',
-      t_not_deleted: 'Suppression non effectuée — exécutez 006_full_update.sql dans le SQL Editor (autoriser la suppression)',
+      t_not_deleted: 'Suppression non effectuée — déconnectez-vous, reconnectez-vous, puis réessayez (mise à jour de sécurité 009)',
       t_deleted: '✅ Avis supprimé définitivement',
       t_acc_perm: 'La gestion des comptes est réservée à l’administrateur',
       t_fill: 'Remplissez tous les champs',
@@ -535,6 +569,9 @@
     });
     document.querySelectorAll('[data-i18n-html]').forEach((el) => {
       el.innerHTML = t(el.dataset.i18nHtml);
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+      el.title = t(el.dataset.i18nTitle);
     });
     document.title = t('app_title');
   }
