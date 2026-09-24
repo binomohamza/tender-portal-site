@@ -80,6 +80,23 @@
     return t('cd_many', { d: n });
   }
 
+  function cdUnit(id, label) {
+    return '<div class="text-center min-w-[46px] sm:min-w-[54px]">' +
+      '<div class="text-3xl sm:text-4xl font-black tabular-nums leading-none" id="' + id + '">0</div>' +
+      '<div class="text-[10px] mt-1.5 opacity-80">' + label + '</div>' +
+      '</div>';
+  }
+
+  function countdownGridHtml() {
+    const sep = '<div class="text-2xl font-black opacity-40 pt-0.5">:</div>';
+    return '<div class="flex items-start justify-center gap-1.5 sm:gap-2.5 my-3" dir="ltr">' +
+      cdUnit('cd-d', t('cd_l_days')) + sep +
+      cdUnit('cd-h', t('cd_l_hours')) + sep +
+      cdUnit('cd-m', t('cd_l_minutes')) + sep +
+      cdUnit('cd-s', t('cd_l_seconds')) +
+      '</div>';
+  }
+
   function openingCountdownHtml() {
     if (!tender || !tender.opening_date) return '';
     const ms = new Date(tender.opening_date).getTime() - Date.now();
@@ -92,34 +109,37 @@
         '</div></div>';
     }
     if (ms < 86400000) {
-      return '<div class="rounded-2xl bg-amber-50 border-2 border-amber-300 p-4 mb-4 flex items-center gap-4">' +
-        '<div class="text-3xl">⏳</div>' +
-        '<div class="min-w-0 flex-1">' +
-        '<div class="text-[11px] font-bold text-amber-700">' + t('cd_less24') + '</div>' +
-        '<div class="text-2xl font-black tabular-nums text-amber-800" id="cd-opening" dir="ltr"></div>' +
-        '</div></div>';
+      return '<div class="rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-800 p-4 mb-4">' +
+        '<div class="flex items-center justify-center gap-2 text-[12px] font-bold text-amber-700">' +
+        '<span class="text-xl">⏳</span>' + t('cd_less24') + '</div>' +
+        countdownGridHtml() +
+        '<div class="text-center text-[11px] text-amber-700/80" dir="auto">' + fmtDate(tender.opening_date, true) + '</div>' +
+        '</div>';
     }
-    const n = Math.floor(ms / 86400000);
-    return '<div class="rounded-2xl bg-gradient-to-l from-primary-800 to-primary-600 text-white p-4 mb-4 flex items-center gap-4 shadow-md">' +
-      '<div class="text-3xl">🗓️</div>' +
-      '<div class="min-w-0 flex-1">' +
-      '<div class="text-[11px] font-bold text-teal-100">' + t('cd_left_title') + '</div>' +
-      '<div class="text-2xl font-black leading-tight">' + daysText(n) + '</div>' +
-      '<div class="text-[11px] text-teal-100/90 mt-1" dir="auto">' + fmtDate(tender.opening_date, true) + '</div>' +
-      '</div></div>';
+    return '<div class="rounded-2xl bg-gradient-to-l from-primary-800 to-primary-600 text-white p-4 mb-4 shadow-md">' +
+      '<div class="flex items-center justify-center gap-2 text-[12px] font-bold text-teal-100">' +
+      '<span class="text-xl">🗓️</span>' + t('cd_left_title') + '</div>' +
+      countdownGridHtml() +
+      '<div class="text-center text-[11px] text-teal-100/90" dir="auto">' + fmtDate(tender.opening_date, true) + '</div>' +
+      '</div>';
   }
 
   function startOpeningCd() {
     if (openingCdTimer) clearInterval(openingCdTimer);
     openingCdTimer = null;
-    const el = $('cd-opening');
+    const el = $('cd-d');
     if (!el || !tender) return;
+    const p = (n) => String(n).padStart(2, '0');
     const tick = () => {
       const ms = new Date(tender.opening_date).getTime() - Date.now();
-      el.textContent = ms > 0 ? fmtCountdown(ms) : '00:00:00';
+      const s = Math.max(0, Math.floor(ms / 1000));
+      $('cd-d').textContent = String(Math.floor(s / 86400));
+      $('cd-h').textContent = p(Math.floor((s % 86400) / 3600));
+      $('cd-m').textContent = p(Math.floor((s % 3600) / 60));
+      $('cd-s').textContent = p(s % 60);
     };
     tick();
-    openingCdTimer = setInterval(tick, 30000);
+    openingCdTimer = setInterval(tick, 1000);
   }
 
   function bindLangToggle() {

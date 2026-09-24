@@ -241,6 +241,10 @@
       cd_many: '{d} يومًا',
       cd_less24: 'أقل من 24 ساعة — الفتح يقترب',
       cd_passed: 'انتهى موعد الفتح',
+      cd_l_days: 'أيام',
+      cd_l_hours: 'ساعات',
+      cd_l_minutes: 'دقائق',
+      cd_l_seconds: 'ثوانٍ',
       cd_expired: 'انتهى',
       cd_expire_in: 'انتهت الصلاحية',
 
@@ -516,6 +520,10 @@
       cd_many: '{d} jours',
       cd_less24: 'Moins de 24 h — ouverture imminente',
       cd_passed: 'Date d’ouverture dépassée',
+      cd_l_days: 'jours',
+      cd_l_hours: 'heures',
+      cd_l_minutes: 'min',
+      cd_l_seconds: 'sec',
       cd_expired: 'Expiré',
       cd_expire_in: 'Expiré',
 
