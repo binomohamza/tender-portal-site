@@ -27,6 +27,47 @@
     return I18N.lang === 'ar' ? '🇫🇷 Français' : '🇩🇿 العربية';
   }
 
+  // عدّاد "كم يومًا متبقّي لفتح الأظرفة"
+  let openingCdTimer = null;
+  function daysText(n) {
+    if (n === 1) return t('cd_1');
+    if (n === 2) return t('cd_2');
+    if (n >= 3 && n <= 10) return t('cd_few', { d: n });
+    return t('cd_many', { d: n });
+  }
+  function openingCountdownHtml() {
+    if (!tender || !tender.opening_date) return '';
+    const ms = new Date(tender.opening_date).getTime() - Date.now();
+    if (ms <= 0) {
+      return '<div class="rounded-xl bg-slate-100 text-slate-500 p-3 mb-3 flex items-center gap-3">' +
+        '<div class="text-2xl">⏰</div>' +
+        '<div><div class="text-[11px] font-semibold opacity-80">' + t('cd_left_title') + '</div>' +
+        '<div class="text-base font-black">' + t('cd_passed') + '</div></div></div>';
+    }
+    if (ms < 86400000) {
+      return '<div class="rounded-xl bg-amber-50 border border-amber-200 text-amber-800 p-3 mb-3 flex items-center gap-3">' +
+        '<div class="text-2xl">⏳</div>' +
+        '<div class="min-w-0"><div class="text-[11px] font-semibold opacity-80">' + t('cd_left_title') + '</div>' +
+        '<div class="text-base font-black">' + t('cd_less24') + ' <span id="cd-opening" class="tabular-nums" dir="ltr"></span></div></div></div>';
+    }
+    return '<div class="rounded-xl bg-gradient-to-l from-primary-700 to-primary-800 text-white p-3 mb-3 flex items-center gap-3">' +
+      '<div class="text-2xl">🗓️</div>' +
+      '<div><div class="text-[11px] font-semibold opacity-80">' + t('cd_left_title') + '</div>' +
+      '<div class="text-lg font-black">' + daysText(Math.floor(ms / 86400000)) + '</div></div></div>';
+  }
+  function startOpeningCd() {
+    if (openingCdTimer) clearInterval(openingCdTimer);
+    openingCdTimer = null;
+    const el = $('cd-opening');
+    if (!el || !tender) return;
+    const tick = () => {
+      const ms = new Date(tender.opening_date).getTime() - Date.now();
+      el.textContent = ms > 0 ? fmtCountdown(ms) : '00:00:00';
+    };
+    tick();
+    openingCdTimer = setInterval(tick, 30000);
+  }
+
   // الرأس الرسمي: تدرج لوني + الشعار + اسم الجامعة + زر تبديل اللغة
   function shell(inner) {
     return (
@@ -165,8 +206,9 @@
       '<span class="text-[10px] font-bold px-2 py-0.5 rounded ' + (tender.kind === 'tender' ? 'bg-indigo-50 text-indigo-700' : 'bg-primary-50 text-primary-700') + '">' + kindName(tender.kind) + '</span>' +
       '<span class="text-[10px] font-bold text-primary-700 bg-primary-50 border border-primary-200 rounded-full px-2 py-0.5">' + t('p_published') + '</span>' +
       '</div>' +
-      '<p class="text-sm text-slate-600 leading-relaxed">' + esc(tender.title) + '</p>' +
-      '<div class="grid grid-cols-2 gap-2 mt-3 text-xs">' +
+       '<p class="text-sm text-slate-600 leading-relaxed">' + esc(tender.title) + '</p>' +
+       openingCountdownHtml() +
+       '<div class="grid grid-cols-2 gap-2 mt-3 text-xs">' +
       '<div class="bg-slate-50 rounded-lg px-3 py-2"><div class="text-slate-400 text-[10px] mb-0.5">' + t('f_duration').replace(' *', '') + '</div><div class="text-slate-700 font-semibold">' + esc(tender.duration || '—') + '</div></div>' +
       '<div class="bg-slate-50 rounded-lg px-3 py-2"><div class="text-slate-400 text-[10px] mb-0.5">' + openingLabel + '</div><div class="text-slate-700 font-semibold">' + fmtDate(tender.opening_date, true) + '</div></div>' +
       '</div>' +
@@ -185,6 +227,7 @@
       '</form>'
     );
     $('bidder-form').addEventListener('submit', onFormSubmit);
+    startOpeningCd();
   }
 
   function renderWorking(msg) {

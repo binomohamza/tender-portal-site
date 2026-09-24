@@ -232,6 +232,13 @@
 
       // عداد الوقت
       cd_day: '{d} يوم ',
+      cd_left_title: 'متبقّي على فتح الأظرفة',
+      cd_1: 'يوم واحد',
+      cd_2: 'يومان',
+      cd_few: '{d} أيام',
+      cd_many: '{d} يومًا',
+      cd_less24: 'أقل من 24 ساعة:',
+      cd_passed: 'انتهى موعد الفتح',
       cd_expired: 'انتهى',
       cd_expire_in: 'انتهت الصلاحية',
 
@@ -495,6 +502,13 @@
       pg_of: 'Page {p} sur {n} ({t})',
 
       cd_day: '{d} j ',
+      cd_left_title: 'Avant l’ouverture des plis',
+      cd_1: '1 jour',
+      cd_2: '2 jours',
+      cd_few: '{d} jours',
+      cd_many: '{d} jours',
+      cd_less24: 'Moins de 24 h :',
+      cd_passed: 'Date d’ouverture dépassée',
       cd_expired: 'Expiré',
       cd_expire_in: 'Expiré',
 
