@@ -22,13 +22,17 @@
   function neutral(inner) {
     return (
       '<div>' +
-      '<div class="bg-gradient-to-b from-primary-700 to-primary-900 text-white px-5 pt-4 pb-8 rounded-b-3xl shadow-md relative z-10">' +
-      neutralHeader() +
-      '<img src="img/logo.png" alt="" class="mx-auto h-16 w-16 object-contain mb-2 bg-white rounded-2xl p-1.5 shadow">' +
-      '<h1 class="text-base font-black leading-snug">' + t('univ') + '</h1>' +
-      '<p class="text-[11px] text-teal-100 mt-1 font-semibold">' + t('p_download_sub') + '</p>' +
+      '<div class="bg-gradient-to-b from-primary-800 via-primary-700 to-primary-800 text-white px-5 pt-4 pb-12 rounded-b-3xl shadow-md relative z-10 overflow-hidden">' +
+      '<div class="absolute -top-12 -left-12 w-44 h-44 rounded-full bg-white/5 pointer-events-none"></div>' +
+      '<div class="absolute -bottom-24 -right-12 w-64 h-64 rounded-full bg-white/5 pointer-events-none"></div>' +
+      '<div class="relative">' + neutralHeader() + '</div>' +
+      '<div class="relative flex flex-col items-center text-center">' +
+      '<img src="img/logo.png" alt="" class="h-16 w-16 object-contain mb-3 bg-white rounded-2xl p-2 shadow-lg">' +
+      '<h1 class="text-base sm:text-lg font-black leading-snug">' + t('univ') + '</h1>' +
+      '<p class="text-[11px] text-teal-100 mt-1.5 font-semibold">' + t('p_download_sub') + '</p>' +
       '</div>' +
-      '<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-start -mt-4 relative z-20">' + inner + '</div>' +
+      '</div>' +
+      '<div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-5 sm:p-6 text-start -mt-7 relative z-20">' + inner + '</div>' +
       '</div>'
     );
   }
