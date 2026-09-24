@@ -11,18 +11,29 @@
       .replaceAll("'", '&#39;');
   };
 
+  // منطقة زمنية رسمية ثابتة (موقع الجامعة) — حتى يظهر وقت فتح الأظرفة
+  // نفسه على أي جهاز (هاتف/حاسوب) مهما كانت إعدادات منطقة زمنيته
+  const OFFICE_TZ = 'Africa/Algiers';
+
   window.fmtDate = function (iso, withTime) {
     if (!iso) return '—';
     const d = new Date(iso);
     if (isNaN(d)) return '—';
     if (window.I18N && I18N.lang === 'fr') {
+      const parts = new Intl.DateTimeFormat('fr-FR', {
+        timeZone: OFFICE_TZ,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+      }).formatToParts(d);
+      const g = (type) => { const e = parts.find((x) => x.type === type); return e ? e.value : '00'; };
       const p = (n) => String(n).padStart(2, '0');
-      const base = p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear();
-      return withTime ? base + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) : base;
+      const base = p(g('day')) + '/' + p(g('month')) + '/' + g('year');
+      return withTime ? base + ' ' + p(g('hour')) + ':' + p(g('minute')) : base;
     }
     return new Intl.DateTimeFormat(AR_LOCALE, {
       dateStyle: 'medium',
       ...(withTime ? { timeStyle: 'short' } : {}),
+      timeZone: OFFICE_TZ,
     }).format(d);
   };
 
