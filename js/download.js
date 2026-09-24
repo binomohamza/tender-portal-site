@@ -141,6 +141,7 @@
       case 'loading': renderLoading(); break;
       case 'notfound': renderNotFound(); break;
       case 'closed': renderClosed(); break;
+      case 'opened': renderOpened(); break;
       case 'error': renderError(lastErr, lastErrRetry); break;
       case 'form': renderForm(); break;
       case 'working': renderWorking(); break;
@@ -161,13 +162,24 @@
       if (error) throw error;
       if (!data) return renderNotFound();
       tender = data;
-      if (tender.status !== 'published') return renderClosed();
-      renderForm();
+      if (isOpened()) return renderOpened();
+      if (tender.status === 'published') return renderForm();
+      renderClosed();
     } catch (err) {
       console.error(err);
       renderError(err, true);
     }
   };
+
+  // فتح تلقائي: منشورة فات موعد فتحها = مفتوحة (أو status='opened' من الخادم)
+  function isOpened() {
+    if (!tender) return false;
+    if (tender.status === 'opened') return true;
+    if (tender.status === 'published' && tender.opening_date) {
+      return new Date(tender.opening_date).getTime() <= Date.now();
+    }
+    return false;
+  }
 
   /* ---------- حالات العرض ---------- */
 
@@ -202,6 +214,28 @@
       iconCircle('🔒', 'bg-amber-50') +
       '<h2 class="font-black text-slate-800 mb-2">' + t('closed_t') + '</h2>' +
       '<p class="text-sm text-slate-500 leading-relaxed">' + t('closed_s') + '</p>' +
+      '</div>'
+    );
+  }
+
+  function renderOpened() {
+    currentView = 'opened';
+    stopTimers();
+    const when = tender.opened_at || tender.opening_date;
+    root().innerHTML = shell(
+      '<div class="text-center py-4">' +
+      iconCircle('📬', 'bg-emerald-50') +
+      '<h2 class="font-black text-emerald-800 text-lg mb-2">' + t('opened_t') + '</h2>' +
+      '<div class="flex items-center justify-center gap-2 flex-wrap mb-1.5">' +
+      '<span class="font-black text-slate-900" dir="auto">' + esc(tender.reference) + '</span>' +
+      '<span class="text-[10px] font-bold px-2 py-0.5 rounded ' + (tender.kind === 'tender' ? 'bg-indigo-50 text-indigo-700' : 'bg-primary-50 text-primary-700') + '">' + kindName(tender.kind) + '</span>' +
+      '</div>' +
+      '<p class="text-sm text-slate-600 leading-relaxed mb-4">' + esc(tender.title) + '</p>' +
+      '<div class="bg-gradient-to-l from-emerald-700 to-emerald-500 text-white rounded-2xl p-4 mb-4 shadow-md">' +
+      '<div class="text-[11px] text-emerald-50 mb-1 font-bold">' + t('opened_time_l') + '</div>' +
+      '<div class="text-lg font-black" dir="auto">' + fmtDate(when, true) + '</div>' +
+      '</div>' +
+      '<p class="text-xs text-slate-400 leading-relaxed">' + t('opened_s') + '</p>' +
       '</div>'
     );
   }
